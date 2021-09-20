@@ -16,4 +16,5 @@ public:
 	void Input() { state->Input(); }
 	void Update() { state->Update(); }
 	void Draw() { state->Draw(); }
+	void DrawBackground() { state->DrawBackground(); }
 };

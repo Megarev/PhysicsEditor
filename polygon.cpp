@@ -46,9 +46,19 @@ void PolygonShape::Update() {
 	}
 }
 
-void PolygonShape::Draw(olc::PixelGameEngine* pge) const {
-	for (size_t i = 0; i < vertices.size() - 1; i++) {
-		pge->DrawLine(vertices[i], vertices[i + 1], color);
+void PolygonShape::Draw(olc::PixelGameEngine* pge, bool is_fill) const {
+	if (is_fill) {
+		for (size_t i = 0; i < vertices.size() - 2; i++) {
+			size_t j = (i + 1) % vertices.size();
+			size_t k = (i + 2) % vertices.size();
+
+			pge->FillTriangle((olc::vi2d)vertices[0], (olc::vi2d)vertices[j], (olc::vi2d)vertices[k], color);
+		}
 	}
-	pge->DrawLine(vertices.back(), vertices[0], color);
+	else {
+		for (size_t i = 0; i < vertices.size() - 1; i++) {
+			pge->DrawLine(vertices[i], vertices[i + 1], color);
+		}
+		pge->DrawLine(vertices.back(), vertices[0], color);
+	}
 }

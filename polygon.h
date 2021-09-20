@@ -1,6 +1,18 @@
 #pragma once
 #include "olcPixelGameEngine.h"
 
+static void DrawArrow(olc::PixelGameEngine* pge, const olc::vf2d& point, const olc::vf2d& dir,
+	float len, float arrow_len, const olc::Pixel& color = olc::WHITE) {
+	const olc::vf2d& p2 = point + len * dir;
+
+	const olc::vf2d& dir_1 =  dir.perp() - dir;
+	const olc::vf2d& dir_2 = -dir.perp() - dir;
+
+	pge->DrawLine((olc::vi2d)point, (olc::vi2d)p2, color);
+	pge->DrawLine((olc::vi2d)p2, (olc::vi2d)(p2 + dir_1 * arrow_len), color);
+	pge->DrawLine((olc::vi2d)p2, (olc::vi2d)(p2 + dir_2 * arrow_len), color);
+}
+
 class PolygonShape {
 private:
 	std::vector<olc::vf2d> model, vertices;
@@ -16,5 +28,5 @@ public:
 	bool IsPointInBounds(const olc::vf2d& point) const;
 
 	void Update();
-	void Draw(olc::PixelGameEngine* pge) const;
+	void Draw(olc::PixelGameEngine* pge, bool is_fill = false) const;
 };
