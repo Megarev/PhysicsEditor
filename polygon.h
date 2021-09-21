@@ -21,12 +21,14 @@ public:
 	olc::Pixel color;
 	float angle = 0.0f;
 	int n_vertices = 0;
+
+	bool is_update_shape = true;
 public:
 	PolygonShape() {}
 	PolygonShape(int n_vertices, const olc::vf2d& size, const olc::vf2d& pos, const olc::Pixel& col);
 
 	bool IsPointInBounds(const olc::vf2d& point) const;
 
-	void Update();
-	void Draw(olc::PixelGameEngine* pge, bool is_fill = false) const;
+	void Update(bool force_update = false);
+	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill = false) const;
 };
