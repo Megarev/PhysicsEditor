@@ -21,7 +21,12 @@ public:
 class EditState : public State {
 private: // Main editor
 	std::vector<PolygonShape> polygons;
+	bool is_polygon_fill = false;
+
 	olc::vf2d offset; // Panning
+	olc::vi2d level_size;
+
+	bool IsPointInLevel(const olc::vf2d& point) const;
 
 	olc::vf2d ToWorld(const olc::vf2d& point) const { return point + offset; }
 	olc::vf2d ToScreen(const olc::vf2d& point) const { return point - offset; }
@@ -42,7 +47,8 @@ private: // Layers
 	std::unordered_map<std::string, LayerData> layers;
 	bool is_update_layers = true;
 private: // GUI
-	gui::ButtonPanel panel;
+	gui::ButtonPanel button_panel;
+	gui::DragBoxPanel box_panel;
 
 	void ButtonFunctions();
 public:

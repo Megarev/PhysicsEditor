@@ -28,6 +28,7 @@ public:
 
 		// Render
 		Clear(olc::BLANK);
+		editor.DrawBackground();
 		editor.Draw();
 
 		return true;
@@ -39,7 +40,7 @@ int main() {
 	srand((unsigned)time(0));
 
 	App app;
-	if (app.Construct(512, 512, 1, 1, false, true)) {
+	if (app.Construct(608, 512, 1, 1, false, true)) {
 		app.Start();
 	}
 

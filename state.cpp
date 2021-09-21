@@ -2,7 +2,10 @@
 
 EditState::EditState(olc::PixelGameEngine* pge) 
 	: State(pge) {
-	polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, { pge->ScreenWidth() / 2.0f, pge->ScreenHeight() / 2.0f }, olc::WHITE });
+
+	level_size = { pge->ScreenWidth(), pge->ScreenHeight() };
+
+	polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, level_size / 2.0f, olc::WHITE });
 	edit_feature = EditFeature::NONE;
 
 	unit_size = 32;
@@ -10,8 +13,26 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	pge->EnableLayer(bg_layer, true);
 	layers.insert({ "bg", { bg_layer, true } });
 
-	panel = gui::ButtonPanel{ { 1, 1 }, { pge->ScreenWidth() - 2, 36 }, olc::VERY_DARK_BLUE };
-	panel.AddButton("ToggleGrid", olc::MAGENTA);
+	// GUI
+	button_panel = gui::ButtonPanel{ { 1, 1 }, { pge->ScreenWidth() - 2, 36 }, olc::VERY_DARK_BLUE };
+	button_panel.AddButton("ToggleGrid", olc::MAGENTA);
+	button_panel.AddButton("ToggleDrawMode", olc::CYAN);
+
+	const olc::vi2d& box_size = { 150, 16 }, panel_size = { 220, 256 };
+	box_panel = gui::DragBoxPanel({ 32, 32 }, panel_size, olc::DARK_YELLOW);
+
+	box_panel.AddDragBox("Mass", olc::BLUE, { 0.0f, INFINITY }, box_size, 1.0f);
+	box_panel.AddDragBox("e", olc::BLUE, { 0.0f, 1.0f }, box_size, 0.1f);
+	box_panel.AddDragBox("sf", olc::BLUE, { 0.0f, 1.0f }, box_size, 0.6f);
+	box_panel.AddDragBox("df", olc::BLUE, { 0.0f, 1.0f }, box_size, 0.25f);
+}
+
+bool EditState::IsPointInLevel(const olc::vf2d& point) const {
+	const olc::vf2d& top_left = { -(float)unit_size, -(float)unit_size };
+	const olc::vf2d& bottom_right = olc::vf2d{ (float)level_size.x + unit_size, (float)level_size.y + unit_size };
+
+	return point.x > top_left.x && point.x < bottom_right.x &&
+		point.y > top_left.y && point.y < bottom_right.y;
 }
 
 void EditState::Scale(const olc::vf2d& m_pos) {
@@ -40,14 +61,35 @@ void EditState::Rotate(const olc::vf2d& m_pos) {
 }
 
 void EditState::Translate(const olc::vf2d& m_pos) {
-	//selected_shape->position += (m_pos - prev_m_pos);
 
 	const olc::vf2d& move_step = olc::vi2d((m_pos - press_m_pos) / unit_size) * (float)unit_size;
+	//auto Clamp = [](float value, float a, float b) { return std::fmaxf(a, std::fminf(value, b)); };
+	
+	if (!IsPointInLevel(selected_shape->position + move_step)) return;
+	
+	/*olc::vf2d new_pos = selected_shape->position + move_step;
+
+	const olc::vf2d& world_top_left = ToScreen({ 0.0f, 0.0f });
+	const olc::vf2d& world_bottom_right = ToScreen((olc::vf2d)level_size);
+
+	new_pos.x = Clamp(new_pos.x, world_top_left.x, world_bottom_right.x);
+	new_pos.y = Clamp(new_pos.y, world_top_left.y, world_bottom_right.y);*/
+
 	if (move_step.mag2() > 0.0f) press_m_pos = m_pos;
 	selected_shape->position += move_step;
 }
 
 void EditState::Input() {
+	
+	bool is_gui_input = false;
+
+	// GUI
+	is_gui_input |= button_panel.Input(pge);
+	ButtonFunctions();
+
+	is_gui_input |= box_panel.Input(pge);
+	if (is_gui_input) return;
+	
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 
 	auto ToGrid = [&](PolygonShape& poly) -> void {
@@ -55,7 +97,6 @@ void EditState::Input() {
 	};
 	
 	// Editing functions
-
 	const olc::vf2d& world_m_pos = ToWorld(m_pos);
 
 	if (!selected_shape) {
@@ -74,13 +115,17 @@ void EditState::Input() {
 				if (pge->GetMouse(0).bPressed) {
 					selected_shape = &poly;
 					press_m_pos = world_m_pos;
+
+					box_panel.is_render = true;
 				}
 				if (flags & 1) edit_feature = EditFeature::TRANSLATE;
 				else if (flags & 2) edit_feature = EditFeature::SCALE;
 				else if (flags & 4) edit_feature = EditFeature::ROTATE;
 				break;
 			}
-			else { edit_feature = EditFeature::NONE; }
+			else if (!is_point_in_bounds) { 
+				edit_feature = EditFeature::NONE; 
+			}
 		}
 	}
 
@@ -94,9 +139,12 @@ void EditState::Input() {
 			}
 		}
 	}
+	else {
+		box_panel.is_render = false;
+	}
 
 	if (pge->GetMouse(0).bReleased) {
-		selected_shape = nullptr;
+		//selected_shape = nullptr;
 		edit_feature = EditFeature::NONE;
 	}
 
@@ -113,9 +161,6 @@ void EditState::Input() {
 		is_update_layers = true;
 	}
 
-	// GUI
-	panel.Input(pge);
-	ButtonFunctions();
 
 	prev_m_pos = m_pos;
 }
@@ -131,13 +176,13 @@ void EditState::DrawBackground() {
 	pge->Clear(olc::BLACK);
 
 	if (layers["bg"].state) {
-		for (int i = 0; i < pge->ScreenHeight() / unit_size + 1; i++) {
+		for (int i = 0; i < level_size.y / unit_size + 1; i++) {
 			pge->DrawLine((olc::vi2d)ToScreen({ 0.0f, (float)i * unit_size }),
-				(olc::vi2d)ToScreen({ (float)pge->ScreenWidth(), (float)i * unit_size }), olc::DARK_CYAN);
+				(olc::vi2d)ToScreen({ (float)level_size.x, (float)i * unit_size }), olc::DARK_CYAN);
 		}
-		for (int i = 0; i < pge->ScreenWidth() / unit_size + 1; i++) {
+		for (int i = 0; i < level_size.x / unit_size + 1; i++) {
 			pge->DrawLine((olc::vi2d)ToScreen({ (float)i * unit_size, 0.0f }),
-				(olc::vi2d)ToScreen({ (float)i * unit_size, (float)pge->ScreenHeight() }), olc::DARK_CYAN);
+				(olc::vi2d)ToScreen({ (float)i * unit_size, (float)level_size.y }), olc::DARK_CYAN);
 		}
 	}
 	else {
@@ -149,7 +194,7 @@ void EditState::DrawBackground() {
 }
 
 void EditState::Draw() {
-	for (auto& p : polygons) p.Draw(pge, offset, false);
+	for (auto& p : polygons) p.Draw(pge, offset, is_polygon_fill);
 	if (selected_shape) {
 		pge->FillCircle((olc::vi2d)ToScreen(selected_shape->position), 5, olc::RED);
 		//DrawArrow(pge, selected_shape->position, { cosf(selected_shape->angle), sinf(selected_shape->angle) }, 100.0f, 5.0f, olc::BLUE);
@@ -175,21 +220,28 @@ void EditState::Draw() {
 
 
 	// GUI
-	panel.Draw(pge);
-	if (panel("ToggleGrid")->IsPointInBounds(m_pos)) {
+	button_panel.Draw(pge);
+	if (button_panel("ToggleGrid")->IsPointInBounds(m_pos)) {
 		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
 	}
+	else if (button_panel("ToggleDrawMode")->IsPointInBounds(m_pos)) {
+		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle DrawMode", olc::CYAN);
+	}
+
+	box_panel.Draw(pge);
 }
 
 void EditState::ButtonFunctions() {
-	if (!panel.buttons.size()) return;
+	if (!button_panel.buttons.size()) return;
 
-	auto toggle_grid = panel("ToggleGrid");
-	if (toggle_grid->is_pressed) {
+	if (button_panel("ToggleGrid")->is_pressed) {
 		LayerData& data = layers["bg"];
 		data.state = !data.state;
 		//pge->EnableLayer(data.id, data.state);
 		is_update_layers = true;
+	}
+	else if (button_panel("ToggleDrawMode")->is_pressed) {
+		is_polygon_fill = !is_polygon_fill;
 	}
 }
 
