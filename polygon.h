@@ -13,6 +13,12 @@ static void DrawArrow(olc::PixelGameEngine* pge, const olc::vf2d& point, const o
 	pge->DrawLine((olc::vi2d)p2, (olc::vi2d)(p2 + dir_2 * arrow_len), color);
 }
 
+struct PhysicsData {
+	float mass = 0.0f;
+	float e = 0.0f; // Coefficient of restitution
+	float sf = 0.0f, df = 0.0f; // Static and dynamic friction
+};
+
 class PolygonShape {
 private:
 	std::vector<olc::vf2d> model, vertices;
@@ -22,6 +28,7 @@ public:
 	float angle = 0.0f;
 	int n_vertices = 0;
 
+	PhysicsData properties;
 	bool is_update_shape = true;
 public:
 	PolygonShape() {}

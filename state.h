@@ -22,6 +22,7 @@ class EditState : public State {
 private: // Main editor
 	std::vector<PolygonShape> polygons;
 	bool is_polygon_fill = false;
+	bool is_update_render = false;
 
 	olc::vf2d offset; // Panning
 	olc::vi2d level_size;
@@ -34,6 +35,10 @@ private: // Editing functions
 	uint32_t unit_size = 0;
 	olc::vf2d press_m_pos, prev_m_pos;
 	PolygonShape* selected_shape = nullptr;
+
+	void OnMousePressEdit(const olc::vf2d& world_m_pos);
+	void OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m_pos);
+	void OnMouseReleaseEdit();
 	
 	enum class EditFeature { NONE = 0, TRANSLATE, SCALE, ROTATE } edit_feature;
 	void Scale(const olc::vf2d& m_pos);
@@ -42,13 +47,13 @@ private: // Editing functions
 private: // Layers
 	struct LayerData { 
 		uint32_t id = 0; 
-		bool state = false;
+		bool state = false, is_update = false;
 	};
 	std::unordered_map<std::string, LayerData> layers;
-	bool is_update_layers = true;
 private: // GUI
 	gui::ButtonPanel button_panel;
 	gui::DragBoxPanel box_panel;
+	gui::ColorPanel color_panel;
 
 	void ButtonFunctions();
 public:

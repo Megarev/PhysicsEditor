@@ -71,7 +71,7 @@ gui::Button* gui::ButtonPanel::operator()(const std::string& name) {
 
 
 gui::DragBox::DragBox(const olc::vi2d& _position, const olc::vf2d& _size, const olc::Pixel& _color, float start_value) 
-	: position(_position), size(_size), color(_color), value(start_value) {}
+	: position(_position), size(_size), init_color(_color), color(_color), value(start_value) {}
 
 bool gui::DragBox::IsPointInBounds(const olc::vf2d& point) const {
 	return point.x > position.x && point.x < position.x + size.x &&
@@ -82,11 +82,15 @@ bool gui::DragBox::Input(olc::PixelGameEngine* pge) {
 	const olc::vi2d& m_pos = pge->GetMousePos();
 	int dir = m_pos.x > position.x + size.x / 2 ? 1 : -1;
 
-	if (pge->GetMouse(0).bPressed) {
-		if (IsPointInBounds(m_pos)) is_press = true;
+	color = init_color * 0.25f;
+	if (IsPointInBounds(m_pos)) {
+		color = init_color * 0.75f;
+		
+		if (pge->GetMouse(0).bPressed) is_press = true;
 	}
 
 	if (pge->GetMouse(0).bHeld && is_press) {
+		color = init_color;
 		value = std::fmaxf(value_constraints.first, std::fminf(value_constraints.second, value + speed * dir));
 	}
 
@@ -111,14 +115,14 @@ void gui::DragBox::Draw(olc::PixelGameEngine* pge) const {
 
 
 
-gui::DragBoxPanel::DragBoxPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color) 
-	: position(_position), size(_size), color(_color) {}
+gui::DragBoxPanel::DragBoxPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& _title) 
+	: position(_position), size(_size), color(_color), title(_title) {}
 
 void gui::DragBoxPanel::AddDragBox(const std::string& name, const olc::Pixel& box_color, const std::pair<float, float>& _value_constraints, const olc::vi2d& box_size, float start_value) {
 	
 	int offset = 50;
 	
-	DragBox box{ { position.x + offset, position.y + (int)drag_boxes.size() * box_size.y + 10 }, box_size, box_color, start_value };
+	DragBox box{ { position.x + offset, position.y + (int)drag_boxes.size() * box_size.y + 20 }, box_size, box_color, start_value };
 	box.value_constraints = _value_constraints;
 	drag_boxes.insert({ name, box });
 }
@@ -158,6 +162,11 @@ void gui::DragBoxPanel::Draw(olc::PixelGameEngine* pge) const {
 		pge->FillRect(position, size, olc::VERY_DARK_BLUE);
 		pge->DrawRect(position, size, olc::WHITE);
 
+		const olc::vi2d& title_size = pge->GetTextSizeProp(title);
+
+		pge->DrawStringProp({ position.x + (size.x - title_scale * title_size.x) / 2, position.y }, title, olc::WHITE, title_scale);
+		pge->DrawLine({ position.x, position.y + title_scale * title_size.y }, { position.x + size.x, position.y + title_scale * title_size.y }, olc::WHITE);
+
 		for (auto& box : drag_boxes) {
 			const olc::vi2d& text_size = pge->GetTextSizeProp(box.first);
 			
@@ -176,4 +185,81 @@ gui::DragBox* gui::DragBoxPanel::operator()(const std::string& name) {
 	return nullptr;
 }
 
+
+
+gui::ColorPicker::ColorPicker(const olc::vi2d& _position, const std::string& filename) 
+	: position(_position) {
+	color_circle = new olc::Sprite(filename);
+	if (color_circle) {
+		radius = (float)color_circle->width / 2.0f;
+	}
+}
+
+bool gui::ColorPicker::IsPointInBounds(const olc::vf2d& point) const {
+	const olc::vf2d& color_circle_pos = position + olc::vf2d{ color_circle->width / 2.0f, color_circle->height / 2.0f };
+	return (point.x - color_circle_pos.x) * (point.x - color_circle_pos.x) + (point.y - color_circle_pos.y) * (point.y - color_circle_pos.y) <= radius * radius;
+}
+
+bool gui::ColorPicker::Input(olc::PixelGameEngine* pge) {
+	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
+
+	if (pge->GetMouse(0).bHeld) {
+		if (IsPointInBounds(m_pos)) {
+			const olc::vi2d& point = m_pos - position;
+			selected_color = color_circle->GetPixel(point);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void gui::ColorPicker::Draw(olc::PixelGameEngine* pge) const {
+	pge->SetPixelMode(olc::Pixel::MASK);
+	pge->DrawSprite(position, color_circle);
+	pge->SetPixelMode(olc::Pixel::NORMAL);
+}
+
+gui::ColorPanel::ColorPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& filename) 
+	: position(_position), size(_size), bg_color(_color) {
+	int offset = 1;
+	color_picker = ColorPicker{ { position.x + offset, position.y + offset }, filename };
+}
+
+bool gui::ColorPanel::IsPointInBounds(const olc::vf2d& point) const {
+	return point.x > position.x && point.x < position.x + size.x &&
+		point.y > position.y && point.y < position.y + size.y;
+}
+
+bool gui::ColorPanel::Input(olc::PixelGameEngine* pge) {
+
+	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
+	
+	if (pge->GetMouse(0).bHeld) {
+		if (IsPointInBounds(m_pos)) {
+			if (!is_pressed && !color_picker.Input(pge)) {
+				is_pressed = true;
+			}
+			return true;
+		}
+		
+		if (is_pressed) {
+			position += (m_pos - prev_m_pos);
+			color_picker.position += (m_pos - prev_m_pos);
+		}
+	}
+
+	if (pge->GetMouse(0).bReleased) is_pressed = false;
+
+	prev_m_pos = m_pos;
+	return false;
+}
+
+void gui::ColorPanel::Draw(olc::PixelGameEngine* pge) const {
+	if (!is_render) return;
+
+	pge->FillRect(position, size, bg_color);
+	pge->DrawRect(position, size, olc::WHITE);
+	color_picker.Draw(pge);
+}
 

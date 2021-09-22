@@ -19,6 +19,7 @@ namespace gui {
 		void Draw(olc::PixelGameEngine* pge) const;
 	};
 
+
 	class ButtonPanel {
 	public:
 		olc::vi2d position, size;
@@ -39,10 +40,11 @@ namespace gui {
 		Button* operator()(const std::string& name);
 	};
 
+
 	class DragBox {
 	public:
 		olc::vi2d position, size;
-		olc::Pixel color;
+		olc::Pixel init_color, color;
 		float value = 0.0f;
 		olc::vi2d prev_m_pos;
 
@@ -60,17 +62,21 @@ namespace gui {
 		void Draw(olc::PixelGameEngine* pge) const;
 	};
 
+
 	class DragBoxPanel {
 	public:
 		olc::vi2d position, size;
 		olc::Pixel color;
 
+		std::string title;
 		std::unordered_map<std::string, DragBox> drag_boxes;
 		bool is_press = false, is_render = true;
 		olc::vi2d prev_m_pos;
+
+		int title_scale = 2;
 	public:
 		DragBoxPanel() {}
-		DragBoxPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color);
+		DragBoxPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& _title);
 
 		void AddDragBox(const std::string& name, const olc::Pixel& box_color, const std::pair<float, float>& _value_constraints, const olc::vi2d& box_size = { 32, 32 }, float start_value = 0.0f);
 		
@@ -81,5 +87,39 @@ namespace gui {
 
 		DragBox* operator()(const std::string& name);
 
+	};
+
+	class ColorPicker {
+	public:
+		olc::Sprite* color_circle = nullptr;
+		olc::vi2d position;
+		float radius = 0.0f;
+		olc::Pixel selected_color;
+	public:
+		ColorPicker() {}
+		ColorPicker(const olc::vi2d& _position, const std::string& filename);
+
+		bool IsPointInBounds(const olc::vf2d& point) const;
+
+		bool Input(olc::PixelGameEngine* pge);
+		void Draw(olc::PixelGameEngine* pge) const;
+	};
+
+	class ColorPanel {
+	public:
+		ColorPicker color_picker;
+		olc::vi2d position, size;
+		olc::Pixel bg_color;
+
+		olc::vi2d prev_m_pos;
+		bool is_pressed = false, is_render = false;
+	public:
+		ColorPanel() {}
+		ColorPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& filename);
+
+		bool IsPointInBounds(const olc::vf2d& point) const;
+
+		bool Input(olc::PixelGameEngine* pge);
+		void Draw(olc::PixelGameEngine* pge) const;
 	};
 };
