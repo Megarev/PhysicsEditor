@@ -99,7 +99,8 @@ void EditState::Input() {
 	// Editing functions
 	const olc::vf2d& world_m_pos = ToWorld(m_pos);
 
-	if (!selected_shape) {
+	if (pge->GetMouse(0).bPressed) {
+		bool is_bounds = false;
 		for (auto& poly : polygons) {
 			PolygonShape test_poly_s = poly; test_poly_s.scale *= 0.8f; test_poly_s.Update(true);
 			PolygonShape test_poly_r = poly; test_poly_r.scale *= 1.2f; test_poly_r.Update(true);
@@ -112,6 +113,7 @@ void EditState::Input() {
 			uint8_t flags = is_point_translate << 0 | is_point_scale << 1 | is_point_rotate << 2;
 
 			if (flags) {
+				is_bounds = true;
 				if (pge->GetMouse(0).bPressed) {
 					selected_shape = &poly;
 					press_m_pos = world_m_pos;
@@ -123,10 +125,11 @@ void EditState::Input() {
 				else if (flags & 4) edit_feature = EditFeature::ROTATE;
 				break;
 			}
-			else if (!is_point_in_bounds) { 
+			else { 
 				edit_feature = EditFeature::NONE; 
 			}
 		}
+		if (!is_bounds) selected_shape = nullptr;
 	}
 
 	if (selected_shape) {
@@ -137,6 +140,7 @@ void EditState::Input() {
 			case EditFeature::ROTATE: Rotate(m_pos); break;
 			case EditFeature::TRANSLATE: Translate(world_m_pos); break;
 			}
+			ToGrid(*selected_shape);
 		}
 	}
 	else {
@@ -151,7 +155,6 @@ void EditState::Input() {
 	// Adding functions
 	if (pge->GetMouse(1).bPressed) {
 		PolygonShape poly = PolygonShape{ 3 + rand() % 4, { 25.0f, 25.0f }, world_m_pos, olc::Pixel(rand() % 256, rand() % 256, rand() % 256) };
-		ToGrid(poly);
 		polygons.push_back(poly);
 	}
 
