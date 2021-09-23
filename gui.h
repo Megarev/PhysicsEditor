@@ -3,28 +3,35 @@
 #include <unordered_map>
 
 namespace gui {
-	class Button {
+	class BoxUIBase {
 	public:
 		olc::vi2d position, size;
 		olc::Pixel init_color, color;
 
 		bool is_pressed = false;
 	public:
+		BoxUIBase() {}
+		BoxUIBase(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color)
+			: position(_position), size(_size), init_color(_color), color(_color) {}
+
+		virtual bool IsPointInBounds(const olc::vf2d& point) const;
+
+		virtual bool Input(olc::PixelGameEngine* pge) = 0;
+		virtual void Draw(olc::PixelGameEngine* pge) = 0;
+	};
+
+	class Button : public BoxUIBase {
+	public:
 		Button() {}
 		Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color);
 
-		bool IsPointInBounds(const olc::vf2d& point) const;
 
-		bool Input(olc::PixelGameEngine* pge);
-		void Draw(olc::PixelGameEngine* pge) const;
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
 	};
 
-
-	class ButtonPanel {
+	class ButtonPanel : public BoxUIBase {
 	public:
-		olc::vi2d position, size;
-		olc::Pixel color;
-
 		std::unordered_map<std::string, Button> buttons;
 	public:
 		ButtonPanel() {}
@@ -32,23 +39,18 @@ namespace gui {
 
 		void AddButton(const std::string& name, const olc::Pixel& button_color, const olc::vi2d& button_size = { 32, 32 });
 
-		bool IsPointInBounds(const olc::vf2d& point) const;
-
-		bool Input(olc::PixelGameEngine* pge);
-		void Draw(olc::PixelGameEngine* pge) const;
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
 
 		Button* operator()(const std::string& name);
 	};
 
 
-	class DragBox {
+	class DragBox : public BoxUIBase {
 	public:
-		olc::vi2d position, size;
-		olc::Pixel init_color, color;
 		float value = 0.0f;
 		olc::vi2d prev_m_pos;
 
-		bool is_press = false;
 		float speed = 0.01f;
 
 		std::pair<float, float> value_constraints = { -INFINITY, INFINITY };
@@ -56,21 +58,16 @@ namespace gui {
 		DragBox() {}
 		DragBox(const olc::vi2d& _position, const olc::vf2d& _size, const olc::Pixel& _color, float start_value);
 
-		bool IsPointInBounds(const olc::vf2d& point) const;
-
-		bool Input(olc::PixelGameEngine* pge);
-		void Draw(olc::PixelGameEngine* pge) const;
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
 	};
 
 
-	class DragBoxPanel {
+	class DragBoxPanel : public BoxUIBase {
 	public:
-		olc::vi2d position, size;
-		olc::Pixel color;
-
 		std::string title;
 		std::unordered_map<std::string, DragBox> drag_boxes;
-		bool is_press = false, is_render = true;
+		bool is_render = true;
 		olc::vi2d prev_m_pos;
 
 		int title_scale = 2;
@@ -82,8 +79,8 @@ namespace gui {
 		
 		bool IsPointInBounds(const olc::vf2d& point) const;
 
-		bool Input(olc::PixelGameEngine* pge);
-		void Draw(olc::PixelGameEngine* pge) const;
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
 
 		DragBox* operator()(const std::string& name);
 
@@ -105,21 +102,16 @@ namespace gui {
 		void Draw(olc::PixelGameEngine* pge) const;
 	};
 
-	class ColorPanel {
+	class ColorPanel : public BoxUIBase {
 	public:
 		ColorPicker color_picker;
-		olc::vi2d position, size;
-		olc::Pixel bg_color;
-
 		olc::vi2d prev_m_pos;
-		bool is_pressed = false, is_render = false;
+		bool is_render = false;
 	public:
 		ColorPanel() {}
 		ColorPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& filename);
 
-		bool IsPointInBounds(const olc::vf2d& point) const;
-
-		bool Input(olc::PixelGameEngine* pge);
-		void Draw(olc::PixelGameEngine* pge) const;
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
 	};
 };

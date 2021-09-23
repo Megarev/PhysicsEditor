@@ -1,12 +1,14 @@
 #include "gui.h"
 
-gui::Button::Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color)
-	: position(_position), size(_size), init_color(_color), color(_color) {}
-
-bool gui::Button::IsPointInBounds(const olc::vf2d& point) const {
+bool gui::BoxUIBase::IsPointInBounds(const olc::vf2d& point) const {
 	return point.x > position.x && point.x < position.x + size.x &&
 		point.y > position.y && point.y < position.y + size.y;
 }
+
+
+
+gui::Button::Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color) 
+	: BoxUIBase(_position, _size, _color) {}
 
 bool gui::Button::Input(olc::PixelGameEngine* pge) {
 
@@ -24,29 +26,22 @@ bool gui::Button::Input(olc::PixelGameEngine* pge) {
 	}
 
 	return is_pressed;
-
-	//if (pge->GetMouse(0).bReleased) is_pressed = false;
 }
 
-void gui::Button::Draw(olc::PixelGameEngine* pge) const {
+void gui::Button::Draw(olc::PixelGameEngine* pge) {
 	pge->DrawRect(position, size, olc::WHITE);
 	pge->FillRect(position + 0.1f * size, 0.8f * size, color);
 }
 
 
 
-gui::ButtonPanel::ButtonPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color) 
-	: position(_position), size(_size), color(_color) {}
+gui::ButtonPanel::ButtonPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color)
+	: BoxUIBase(_position, _size, _color) {}
 
 void gui::ButtonPanel::AddButton(const std::string& name, const olc::Pixel& button_color, const olc::vi2d& button_size) {
 	
 	Button button{ position + (int)buttons.size() * olc::vi2d{ button_size.x, 0 }, button_size, button_color };
 	buttons.insert({ name, button });
-}
-
-bool gui::ButtonPanel::IsPointInBounds(const olc::vf2d& point) const {
-	return point.x > position.x && point.x < position.x + size.x &&
-		point.y > position.y && point.y < position.y + size.y;
 }
 
 bool gui::ButtonPanel::Input(olc::PixelGameEngine* pge) {
@@ -55,7 +50,7 @@ bool gui::ButtonPanel::Input(olc::PixelGameEngine* pge) {
 	return is_press;
 }
 
-void gui::ButtonPanel::Draw(olc::PixelGameEngine* pge) const {
+void gui::ButtonPanel::Draw(olc::PixelGameEngine* pge) {
 	pge->FillRect(position, size, color);
 	for (auto& button : buttons) button.second.Draw(pge);
 }
@@ -70,13 +65,8 @@ gui::Button* gui::ButtonPanel::operator()(const std::string& name) {
 
 
 
-gui::DragBox::DragBox(const olc::vi2d& _position, const olc::vf2d& _size, const olc::Pixel& _color, float start_value) 
-	: position(_position), size(_size), init_color(_color), color(_color), value(start_value) {}
-
-bool gui::DragBox::IsPointInBounds(const olc::vf2d& point) const {
-	return point.x > position.x && point.x < position.x + size.x &&
-		point.y > position.y && point.y < position.y + size.y;
-}
+gui::DragBox::DragBox(const olc::vi2d& _position, const olc::vf2d& _size, const olc::Pixel& _color, float start_value)
+	: BoxUIBase(_position, _size, _color), value(start_value) {}
 
 bool gui::DragBox::Input(olc::PixelGameEngine* pge) {
 	const olc::vi2d& m_pos = pge->GetMousePos();
@@ -86,23 +76,23 @@ bool gui::DragBox::Input(olc::PixelGameEngine* pge) {
 	if (IsPointInBounds(m_pos)) {
 		color = init_color * 0.75f;
 		
-		if (pge->GetMouse(0).bPressed) is_press = true;
+		if (pge->GetMouse(0).bPressed) is_pressed = true;
 	}
 
-	if (pge->GetMouse(0).bHeld && is_press) {
+	if (pge->GetMouse(0).bHeld && is_pressed) {
 		color = init_color;
 		value = std::fmaxf(value_constraints.first, std::fminf(value_constraints.second, value + speed * dir));
 	}
 
-	if (pge->GetMouse(0).bReleased) is_press = false;
+	if (pge->GetMouse(0).bReleased) is_pressed = false;
 
 	prev_m_pos = m_pos;
 
-	return is_press;
+	return is_pressed;
 
 }
 
-void gui::DragBox::Draw(olc::PixelGameEngine* pge) const {
+void gui::DragBox::Draw(olc::PixelGameEngine* pge) {
 	pge->FillRect(position, size, color);
 	pge->DrawRect(position, size, olc::WHITE);
 
@@ -116,7 +106,7 @@ void gui::DragBox::Draw(olc::PixelGameEngine* pge) const {
 
 
 gui::DragBoxPanel::DragBoxPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& _title) 
-	: position(_position), size(_size), color(_color), title(_title) {}
+	: BoxUIBase(_position, _size, _color), title(_title) {}
 
 void gui::DragBoxPanel::AddDragBox(const std::string& name, const olc::Pixel& box_color, const std::pair<float, float>& _value_constraints, const olc::vi2d& box_size, float start_value) {
 	
@@ -138,25 +128,25 @@ bool gui::DragBoxPanel::Input(olc::PixelGameEngine* pge) {
 
 	if (pge->GetMouse(0).bPressed) {
 		if (IsPointInBounds((olc::vf2d)m_pos)) {
-			is_press = true;
+			is_pressed = true;
 			is_render = true;
 		}
 	}
 
-	if (pge->GetMouse(0).bHeld && is_press) {
+	if (pge->GetMouse(0).bHeld && is_pressed) {
 		position += (m_pos - prev_m_pos);
 		for (auto& box : drag_boxes) box.second.position += (m_pos - prev_m_pos);
 	}
 
 	if (pge->GetMouse(0).bReleased) {
-		is_press = false;
+		is_pressed = false;
 	}
 
 	prev_m_pos = m_pos;
-	return is_press;
+	return is_pressed;
 }
 
-void gui::DragBoxPanel::Draw(olc::PixelGameEngine* pge) const {
+void gui::DragBoxPanel::Draw(olc::PixelGameEngine* pge) {
 	if (is_render) {
 
 		pge->FillRect(position, size, olc::VERY_DARK_BLUE);
@@ -175,7 +165,6 @@ void gui::DragBoxPanel::Draw(olc::PixelGameEngine* pge) const {
 		}
 	}
 }
-
 
 gui::DragBox* gui::DragBoxPanel::operator()(const std::string& name) {
 
@@ -221,14 +210,9 @@ void gui::ColorPicker::Draw(olc::PixelGameEngine* pge) const {
 }
 
 gui::ColorPanel::ColorPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& filename) 
-	: position(_position), size(_size), bg_color(_color) {
+	: BoxUIBase(_position, _size, _color) {
 	int offset = 1;
 	color_picker = ColorPicker{ { position.x + offset, position.y + offset }, filename };
-}
-
-bool gui::ColorPanel::IsPointInBounds(const olc::vf2d& point) const {
-	return point.x > position.x && point.x < position.x + size.x &&
-		point.y > position.y && point.y < position.y + size.y;
 }
 
 bool gui::ColorPanel::Input(olc::PixelGameEngine* pge) {
@@ -257,10 +241,10 @@ bool gui::ColorPanel::Input(olc::PixelGameEngine* pge) {
 	return is_pos_in_bounds | is_pressed;
 }
 
-void gui::ColorPanel::Draw(olc::PixelGameEngine* pge) const {
+void gui::ColorPanel::Draw(olc::PixelGameEngine* pge) {
 	if (!is_render) return;
 
-	pge->FillRect(position, size, bg_color);
+	pge->FillRect(position, size, color);
 	pge->DrawRect(position, size, olc::WHITE);
 	color_picker.Draw(pge);
 }
