@@ -7,21 +7,23 @@ bool gui::BoxUIBase::IsPointInBounds(const olc::vf2d& point) const {
 
 
 
-gui::Button::Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color) 
-	: BoxUIBase(_position, _size, _color) {}
+gui::Button::Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, bool is_toggleable) 
+	: BoxUIBase(_position, _size, _color), is_button_toggleable(is_toggleable) {}
 
 bool gui::Button::Input(olc::PixelGameEngine* pge) {
 
 	const olc::vf2d& m_pos = pge->GetMousePos() * 1.0f;
 
 	color = init_color * 0.25f;
+	if (is_toggle_state && is_button_toggleable) color = init_color * 0.1f;
 	is_pressed = false;
 	
 	if (IsPointInBounds(m_pos)) {
-		color = init_color * 0.5f;
+		if (!is_toggle_state && !is_button_toggleable) color = init_color * 0.5f;
 		if (pge->GetMouse(0).bPressed) {
-			color = init_color * 0.9f;
+			if (!is_toggle_state && !is_button_toggleable) color = init_color * 0.9f;
 			is_pressed = true;
+			if (is_button_toggleable) is_toggle_state = !is_toggle_state;
 		}
 	}
 
@@ -29,8 +31,8 @@ bool gui::Button::Input(olc::PixelGameEngine* pge) {
 }
 
 void gui::Button::Draw(olc::PixelGameEngine* pge) {
+	pge->FillRect(position, size, color);
 	pge->DrawRect(position, size, olc::WHITE);
-	pge->FillRect(position + 0.1f * size, 0.8f * size, color);
 }
 
 
@@ -38,9 +40,9 @@ void gui::Button::Draw(olc::PixelGameEngine* pge) {
 gui::ButtonPanel::ButtonPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color)
 	: BoxUIBase(_position, _size, _color) {}
 
-void gui::ButtonPanel::AddButton(const std::string& name, const olc::Pixel& button_color, const olc::vi2d& button_size) {
+void gui::ButtonPanel::AddButton(const std::string& name, const olc::Pixel& button_color, bool is_toggleable, const olc::vi2d& button_size) {
 	
-	Button button{ position + (int)buttons.size() * olc::vi2d{ button_size.x, 0 }, button_size, button_color };
+	Button button{ position + (int)buttons.size() * olc::vi2d{ button_size.x, 0 }, button_size, button_color, is_toggleable };
 	buttons.insert({ name, button });
 }
 
@@ -51,7 +53,8 @@ bool gui::ButtonPanel::Input(olc::PixelGameEngine* pge) {
 }
 
 void gui::ButtonPanel::Draw(olc::PixelGameEngine* pge) {
-	pge->FillRect(position, size, color);
+	pge->FillRect(position, size, olc::VERY_DARK_CYAN);
+	pge->DrawRect(position, size, color);
 	for (auto& button : buttons) button.second.Draw(pge);
 }
 
@@ -249,3 +252,60 @@ void gui::ColorPanel::Draw(olc::PixelGameEngine* pge) {
 	color_picker.Draw(pge);
 }
 
+gui::ListBox::ListBox(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, int _y_offset)
+	: BoxUIBase(_position, _size, _color), y_offset(_y_offset) {}
+
+void gui::ListBox::AddItem(const std::string& item_name, const olc::Pixel& item_color) {
+	int offset = 0;
+
+	Button item_button{ { position.x + offset, position.y + offset + (int)items.size() * y_offset }, { size.x - offset, y_offset }, item_color, false };
+	items.insert({ item_name, item_button });
+}
+
+bool gui::ListBox::Input(olc::PixelGameEngine* pge) {
+
+	const olc::vi2d& m_pos = pge->GetMousePos();
+	
+	if (pge->GetMouse(1).bPressed && !is_render) {
+		is_render = true;
+
+		position = m_pos;
+
+		int offset = 0, n = 0;
+		for (auto& item : items) {
+			item.second.position = { position.x + offset, position.y + offset + n * y_offset };
+			n++;
+		}
+	}
+	if (is_render) {
+		for (auto& item : items) is_pressed |= item.second.Input(pge);
+	}
+
+	if (pge->GetMouse(0).bPressed && !IsPointInBounds(m_pos)) {
+		is_pressed = false;
+		is_render = false;
+	}
+	return is_pressed;
+}
+
+void gui::ListBox::Draw(olc::PixelGameEngine* pge) {
+	if (!is_render) return;
+
+	pge->FillRect(position, size, color);
+	pge->DrawRect(position, size, olc::WHITE);
+
+	for (auto& item : items) {
+		item.second.Draw(pge);
+
+		const olc::vi2d& text_size = pge->GetTextSizeProp(item.first);
+		pge->DrawStringProp({ item.second.position.x + (item.second.size.x - text_size.x) / 2, item.second.position.y }, item.first);
+	}
+}
+
+gui::Button* gui::ListBox::operator()(const std::string& name)
+{
+	auto item = items.find(name);
+	if (item != items.end()) return &item->second;
+
+	return nullptr;
+}

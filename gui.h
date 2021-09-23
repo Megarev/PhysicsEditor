@@ -21,10 +21,12 @@ namespace gui {
 	};
 
 	class Button : public BoxUIBase {
+	private:
+		bool is_button_toggleable = false;
+		bool is_toggle_state = false;
 	public:
 		Button() {}
-		Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color);
-
+		Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, bool is_toggleable = false);
 
 		bool Input(olc::PixelGameEngine* pge) override;
 		void Draw(olc::PixelGameEngine* pge) override;
@@ -37,7 +39,7 @@ namespace gui {
 		ButtonPanel() {}
 		ButtonPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color);
 
-		void AddButton(const std::string& name, const olc::Pixel& button_color, const olc::vi2d& button_size = { 32, 32 });
+		void AddButton(const std::string& name, const olc::Pixel& button_color, bool is_toggleable = false, const olc::vi2d& button_size = { 32, 32 });
 
 		bool Input(olc::PixelGameEngine* pge) override;
 		void Draw(olc::PixelGameEngine* pge) override;
@@ -83,15 +85,15 @@ namespace gui {
 		void Draw(olc::PixelGameEngine* pge) override;
 
 		DragBox* operator()(const std::string& name);
-
 	};
+
 
 	class ColorPicker {
 	public:
 		olc::Sprite* color_circle = nullptr;
 		olc::vi2d position;
 		float radius = 0.0f;
-		olc::Pixel selected_color;
+		olc::Pixel selected_color = olc::WHITE;
 	public:
 		ColorPicker() {}
 		ColorPicker(const olc::vi2d& _position, const std::string& filename);
@@ -101,6 +103,7 @@ namespace gui {
 		bool Input(olc::PixelGameEngine* pge);
 		void Draw(olc::PixelGameEngine* pge) const;
 	};
+
 
 	class ColorPanel : public BoxUIBase {
 	public:
@@ -113,5 +116,23 @@ namespace gui {
 
 		bool Input(olc::PixelGameEngine* pge) override;
 		void Draw(olc::PixelGameEngine* pge) override;
+	};
+	
+
+	class ListBox : public BoxUIBase {
+	public:
+		std::unordered_map<std::string, Button> items;
+		bool is_render = false;
+		int y_offset = 0;
+	public:
+		ListBox() {}
+		ListBox(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, int _y_offset);
+
+		void AddItem(const std::string& item_name, const olc::Pixel& item_color);
+
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
+
+		Button* operator()(const std::string& name);
 	};
 };

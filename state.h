@@ -21,8 +21,8 @@ public:
 class EditState : public State {
 private: // Main editor
 	std::vector<PolygonShape> polygons;
-	bool is_polygon_fill = false;
-	bool is_update_render = false;
+	bool is_polygon_fill = false, is_update_render = false;
+	bool is_snap_to_grid = true;
 
 	olc::vf2d offset; // Panning
 	olc::vi2d level_size;
@@ -57,8 +57,12 @@ private: // GUI
 	gui::ButtonPanel button_panel;
 	gui::DragBoxPanel box_panel;
 	gui::ColorPanel color_panel;
+	gui::ListBox poly_panel;
 
 	void ButtonFunctions();
+	void ListBoxFunctions();
+
+	PolygonShape* add_polygon = nullptr;
 public:
 	EditState(olc::PixelGameEngine* pge);
 
