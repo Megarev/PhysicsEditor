@@ -234,13 +234,15 @@ bool gui::ColorPanel::IsPointInBounds(const olc::vf2d& point) const {
 bool gui::ColorPanel::Input(olc::PixelGameEngine* pge) {
 
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
-	
+	bool is_pos_in_bounds = false;
+
 	if (pge->GetMouse(0).bHeld) {
-		if (IsPointInBounds(m_pos)) {
-			if (!is_pressed && !color_picker.Input(pge)) {
+		if (!is_pressed && IsPointInBounds(m_pos)) {
+			bool is_color_picker_input = color_picker.Input(pge);
+			if (!(is_pressed || is_color_picker_input)) {
 				is_pressed = true;
-				return true;
 			}
+			else if (is_color_picker_input) { is_pos_in_bounds = true; }
 		}
 		
 		if (is_pressed) {
@@ -250,9 +252,9 @@ bool gui::ColorPanel::Input(olc::PixelGameEngine* pge) {
 	}
 
 	if (pge->GetMouse(0).bReleased) is_pressed = false;
-
 	prev_m_pos = m_pos;
-	return false;
+
+	return is_pos_in_bounds | is_pressed;
 }
 
 void gui::ColorPanel::Draw(olc::PixelGameEngine* pge) const {

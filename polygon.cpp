@@ -3,8 +3,9 @@
 PolygonShape::PolygonShape(int _n_vertices, const olc::vf2d& size, const olc::vf2d& pos, const olc::Pixel& col)
 	: n_vertices(_n_vertices), color(col), scale(size), position(pos) {
 	vertices.resize(n_vertices);
+
 	for (int i = 0; i < n_vertices; i++) {
-		model.push_back({ cosf(2.0f * 3.1415926f / n_vertices * i), sinf(2.0f * 3.1415926f / n_vertices * i) });
+		model.push_back({ cosf(2.0f * PI / n_vertices * i + PI / 4.0f), sinf(2.0f * PI / n_vertices * i + PI / 4.0f) });
 	}
 }
 

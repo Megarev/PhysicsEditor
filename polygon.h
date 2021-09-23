@@ -22,6 +22,7 @@ struct PhysicsData {
 class PolygonShape {
 private:
 	std::vector<olc::vf2d> model, vertices;
+	const float PI = 3.1415926f;
 public:
 	olc::vf2d position, scale;
 	olc::Pixel color;

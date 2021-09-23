@@ -40,6 +40,8 @@ private: // Editing functions
 	void OnMousePressEdit(const olc::vf2d& world_m_pos);
 	void OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m_pos);
 	void OnMouseReleaseEdit();
+
+	bool is_feature = false; // Is edit feature being used
 	
 	enum class EditFeature { NONE = 0, TRANSLATE, SCALE, ROTATE } edit_feature;
 	void Scale(const olc::vf2d& m_pos);

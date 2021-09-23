@@ -107,7 +107,8 @@ void EditState::Input() {
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 	const olc::vf2d& world_m_pos = ToWorld(m_pos);
 
-	if (pge->GetMouse(0).bPressed) { OnMousePressEdit(world_m_pos); }
+	OnMousePressEdit(world_m_pos);
+	//if (pge->GetMouse(0).bPressed) { OnMousePressEdit(world_m_pos); }
 	if (pge->GetMouse(0).bHeld) { OnMouseHoldEdit(m_pos, world_m_pos); }
 	if (pge->GetMouse(0).bReleased) { OnMouseReleaseEdit(); }
 
@@ -240,30 +241,33 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 
 		uint8_t flags = is_point_translate << 0 | is_point_scale << 1 | is_point_rotate << 2;
 
-		if (flags) {
-			is_bounds = true;
-			if (pge->GetMouse(0).bPressed) {
-				selected_shape = &poly;
-				press_m_pos = world_m_pos;
+		if (!is_feature) {
+			if (flags) {
+				is_bounds = true;
+				if (pge->GetMouse(0).bPressed) {
+					selected_shape = &poly;
+					press_m_pos = world_m_pos;
 
-				box_panel("Mass")->value = selected_shape->properties.mass;
-				box_panel("e")->value = selected_shape->properties.e;
-				box_panel("sf")->value = selected_shape->properties.sf;
-				box_panel("df")->value = selected_shape->properties.df;
+					box_panel("Mass")->value = selected_shape->properties.mass;
+					box_panel("e")->value = selected_shape->properties.e;
+					box_panel("sf")->value = selected_shape->properties.sf;
+					box_panel("df")->value = selected_shape->properties.df;
 
-				color_panel.color_picker.selected_color = selected_shape->color;
+					color_panel.color_picker.selected_color = selected_shape->color;
 
-				box_panel.is_render = true;
-				color_panel.is_render = true;
+					box_panel.is_render = true;
+					color_panel.is_render = true;
+					is_feature = true;
+				}
+				if (flags & 1) edit_feature = EditFeature::TRANSLATE;
+				else if (flags & 2) edit_feature = EditFeature::SCALE;
+				else if (flags & 4) edit_feature = EditFeature::ROTATE;
+				break;
 			}
-			if (flags & 1) edit_feature = EditFeature::TRANSLATE;
-			else if (flags & 2) edit_feature = EditFeature::SCALE;
-			else if (flags & 4) edit_feature = EditFeature::ROTATE;
-			break;
+			else { edit_feature = EditFeature::NONE; }
 		}
-		else { edit_feature = EditFeature::NONE; }
 	}
-	if (!is_bounds) selected_shape = nullptr;
+	if (!is_bounds && pge->GetMouse(0).bPressed) selected_shape = nullptr;
 }
 
 void EditState::OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m_pos) {
@@ -289,4 +293,5 @@ void EditState::OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m
 
 void EditState::OnMouseReleaseEdit() {
 	edit_feature = EditFeature::NONE;
+	is_feature = false;
 }
