@@ -113,7 +113,7 @@ void EditState::Input() {
 
 	// Adding functions
 	if (pge->GetMouse(1).bPressed) {
-		PolygonShape poly = PolygonShape{ 3 + rand() % 4, { 25.0f, 25.0f }, world_m_pos, olc::Pixel(rand() % 256, rand() % 256, rand() % 256) };
+		PolygonShape poly = PolygonShape{ 3 + rand() % 4, { 25.0f, 25.0f }, ToGrid(world_m_pos), olc::Pixel(rand() % 256, rand() % 256, rand() % 256) };
 		polygons.push_back(poly);
 		layers["fg"].is_update = true;
 	}
@@ -268,7 +268,7 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 
 void EditState::OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m_pos) {
 
-	auto ToGrid = [&](PolygonShape& poly) -> void { poly.position = olc::vi2d(poly.position / unit_size) * (float)unit_size; };
+	auto ToGridPolygon = [&](PolygonShape& poly) -> void { poly.position = olc::vi2d(poly.position / unit_size) * (float)unit_size; };
 
 	layers["fg"].is_update = true;
 
@@ -279,7 +279,7 @@ void EditState::OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m
 		case EditFeature::ROTATE: Rotate(m_pos); break;
 		case EditFeature::TRANSLATE: Translate(world_m_pos); break;
 		}
-		ToGrid(*selected_shape);
+		ToGridPolygon(*selected_shape);
 	}
 	else { 
 		box_panel.is_render = false; 

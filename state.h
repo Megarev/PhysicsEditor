@@ -31,6 +31,7 @@ private: // Main editor
 
 	olc::vf2d ToWorld(const olc::vf2d& point) const { return point + offset; }
 	olc::vf2d ToScreen(const olc::vf2d& point) const { return point - offset; }
+	olc::vi2d ToGrid(const olc::vf2d& point) const { return olc::vi2d(point / unit_size) * unit_size; }
 private: // Editing functions
 	uint32_t unit_size = 0;
 	olc::vf2d press_m_pos, prev_m_pos;
