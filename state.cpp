@@ -115,12 +115,14 @@ void EditState::Input() {
 	if (pge->GetMouse(1).bPressed) {
 		PolygonShape poly = PolygonShape{ 3 + rand() % 4, { 25.0f, 25.0f }, world_m_pos, olc::Pixel(rand() % 256, rand() % 256, rand() % 256) };
 		polygons.push_back(poly);
+		layers["fg"].is_update = true;
 	}
 
 	// Panning functions
 	if (pge->GetMouse(2).bHeld) {
 		offset += -(m_pos - prev_m_pos);
 		layers["bg"].is_update = true;
+		layers["fg"].is_update = true;
 	}
 
 	prev_m_pos = m_pos;
@@ -248,6 +250,8 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 				box_panel("e")->value = selected_shape->properties.e;
 				box_panel("sf")->value = selected_shape->properties.sf;
 				box_panel("df")->value = selected_shape->properties.df;
+
+				color_panel.color_picker.selected_color = selected_shape->color;
 
 				box_panel.is_render = true;
 				color_panel.is_render = true;

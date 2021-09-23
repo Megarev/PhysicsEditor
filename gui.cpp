@@ -239,8 +239,8 @@ bool gui::ColorPanel::Input(olc::PixelGameEngine* pge) {
 		if (IsPointInBounds(m_pos)) {
 			if (!is_pressed && !color_picker.Input(pge)) {
 				is_pressed = true;
+				return true;
 			}
-			return true;
 		}
 		
 		if (is_pressed) {
