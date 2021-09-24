@@ -24,9 +24,9 @@ private:
 	std::vector<olc::vf2d> model, vertices;
 	const float PI = 3.1415926f;
 public:
-	olc::vf2d position, scale;
+	olc::vf2d position, prev_position, scale, prev_scale;
 	olc::Pixel color;
-	float angle = 0.0f;
+	float angle = 0.0f, prev_angle = 0.0f;
 	int n_vertices = 0;
 
 	PhysicsData properties;
@@ -36,7 +36,13 @@ public:
 	PolygonShape(int n_vertices, const olc::vf2d& size, const olc::vf2d& pos, const olc::Pixel& col);
 
 	bool IsPointInBounds(const olc::vf2d& point) const;
+	olc::vf2d* GetVertexInBounds(const olc::vf2d& point, float radius);
+
+	void Initialize();
 
 	void Update(bool force_update = false);
 	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill = false) const;
+
+	std::vector<olc::vf2d> GetVertices() const { return vertices; }
+	olc::vf2d& GetVertex(size_t index) { return vertices[index]; }
 };
