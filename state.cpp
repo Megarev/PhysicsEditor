@@ -82,7 +82,7 @@ void EditState::Rotate(const olc::vf2d& m_pos) {
 void EditState::Translate(const olc::vf2d& m_pos) {
 	olc::vf2d move_step; 
 	if (is_snap_to_grid) move_step = olc::vi2d((m_pos - press_m_pos) / (float)unit_size) * (float)unit_size;
-	else move_step = (m_pos - prev_m_pos);
+	else move_step = (m_pos - press_m_pos);
 	
 	if (!IsPointInLevel(selected_shape->position + move_step)) return;
 
@@ -93,7 +93,7 @@ void EditState::Translate(const olc::vf2d& m_pos) {
 void EditState::MoveVertex(const olc::vf2d& m_pos) {
 	olc::vf2d move_step;
 	if (is_snap_to_grid) move_step = olc::vi2d((m_pos - press_m_pos) / (float)unit_size) * (float)unit_size;
-	else move_step = (m_pos - prev_m_pos);
+	else move_step = (m_pos - press_m_pos);
 
 	auto IsConcavePolygon = [&]() -> bool {
 		for (int b = 0; b < selected_shape->n_vertices; b++) {
@@ -208,7 +208,7 @@ void EditState::Draw() {
 			//DrawArrow(pge, selected_shape->position, { cosf(selected_shape->angle), sinf(selected_shape->angle) }, 100.0f, 5.0f, olc::BLUE);
 			//pge->DrawString(0, 0, "Angle: " + std::to_string(selected_shape->angle));
 		
-			for (auto& v : selected_shape->GetVertices()) pge->FillCircle((olc::vi2d)v, 5, selected_shape->color * 0.8f);
+			for (auto& v : selected_shape->GetVertices()) pge->FillCircle((olc::vi2d)ToScreen(v), 5, selected_shape->color * 0.8f);
 			if (selected_vertex) pge->FillCircle((olc::vi2d)ToScreen(*selected_vertex), 5, olc::MAGENTA);
 		}
 		layers["fg"].is_update = false;
