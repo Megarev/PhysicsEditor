@@ -1,12 +1,14 @@
 #include "polygon.h"
 
-PolygonShape::PolygonShape(int _n_vertices, const olc::vf2d& size, const olc::vf2d& pos, const olc::Pixel& col)
-	: n_vertices(_n_vertices), color(col), scale(size), position(pos) {
+PolygonShape::PolygonShape(int _n_vertices, const olc::vf2d& size, const olc::vf2d& pos, const olc::Pixel& col, uint32_t _id)
+	: n_vertices(_n_vertices), color(col), scale(size), prev_position(pos), position(pos), id(_id) {
 	vertices.resize(n_vertices);
 
 	for (int i = 0; i < n_vertices; i++) {
 		model.push_back({ cosf(2.0f * PI / n_vertices * i + PI / 4.0f), sinf(2.0f * PI / n_vertices * i + PI / 4.0f) });
 	}
+
+	Initialize();
 }
 
 bool PolygonShape::IsPointInBounds(const olc::vf2d& point) const {
@@ -30,14 +32,20 @@ bool PolygonShape::IsPointInBounds(const olc::vf2d& point) const {
 	return false;
 }
 
-void PolygonShape::Update(bool force_update) {
-
-	if (!(is_update_shape || force_update)) return;
-
-	float c = cosf(angle), s = sinf(angle);
+olc::vf2d* PolygonShape::GetVertexInBounds(const olc::vf2d& point, float radius) {
 	
+	for (auto& v : vertices) {
+		if ((v.x - point.x) * (v.x - point.x) + (v.y - point.y) * (v.y - point.y) <= radius * radius) return &v;
+	}
+	
+	return nullptr;
+}
+
+void PolygonShape::Initialize() {
+	float c = cosf(angle), s = sinf(angle);
+
 	for (size_t i = 0; i < model.size(); i++) {
-		
+
 		const olc::vf2d& model_ref = (model[i] * scale);
 		// Rotation + Scaling
 		vertices[i] = {
@@ -48,6 +56,37 @@ void PolygonShape::Update(bool force_update) {
 		// Translation
 		vertices[i] += position;
 	}
+}
+
+void PolygonShape::Update(bool force_update) {
+
+	if (!(is_update_shape || force_update)) return;
+
+	float c = cosf(angle - prev_angle), s = sinf(angle - prev_angle);
+	for (size_t i = 0; i < vertices.size(); i++) {
+		olc::vf2d vertex = {
+			(vertices[i].x - position.x) * c - (vertices[i].y - position.y) * s,
+			(vertices[i].x - position.x) * s + (vertices[i].y - position.y) * c
+		};
+
+		vertices[i] = vertex + position + (position - prev_position);
+		//if (scale.mag2() != prev_scale.mag2()) vertices[i] *= (scale - prev_scale);
+	}
+	prev_angle = angle;
+	prev_position = position;
+	
+	//for (size_t i = 0; i < model.size(); i++) {
+	//	
+	//	const olc::vf2d& model_ref = (model[i] * scale);
+	//	// Rotation + Scaling
+	//	vertices[i] = {
+	//		model_ref.x * c - model_ref.y * s,
+	//		model_ref.x * s + model_ref.y * c,
+	//	};
+
+	//	// Translation
+	//	vertices[i] += position;
+	//}
 
 	is_update_shape = false;
 }
