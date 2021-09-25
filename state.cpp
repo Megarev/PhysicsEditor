@@ -166,8 +166,8 @@ void EditState::Update() {
 	}
 
 	if (add_polygon) {
-		if (is_snap_to_grid) { add_polygon->position = ToGrid(m_pos); }
-		else { add_polygon->position = m_pos; }
+		if (is_snap_to_grid) { add_polygon->position = ToWorld(ToGrid(m_pos)); }
+		else { add_polygon->position = ToWorld(m_pos); }
 		add_polygon->Update(true);
 	}
 }
