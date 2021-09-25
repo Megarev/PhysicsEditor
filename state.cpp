@@ -1,11 +1,16 @@
 #include "state.h"
 
-EditState::EditState(olc::PixelGameEngine* pge) 
+void EditState::IsRenderGUI(bool state) {
+	box_panel.is_render = state;
+	color_panel.is_render = state;
+}
+
+EditState::EditState(olc::PixelGameEngine* pge)
 	: State(pge) {
 
 	level_size = { pge->ScreenWidth(), pge->ScreenHeight() };
 
-	polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, level_size / 2.0f, olc::WHITE });
+	polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, (olc::vf2d)level_size / 2.0f, olc::WHITE, id_count++ });
 	edit_feature = EditFeature::NONE;
 
 	unit_size = 32;
@@ -76,73 +81,73 @@ void EditState::Rotate(const olc::vf2d& m_pos) {
 
 void EditState::Translate(const olc::vf2d& m_pos) {
 	olc::vf2d move_step; 
-	if (is_snap_to_grid) move_step = olc::vi2d((m_pos - press_m_pos) / unit_size) * (float)unit_size;
+	if (is_snap_to_grid) move_step = olc::vi2d((m_pos - press_m_pos) / (float)unit_size) * (float)unit_size;
 	else move_step = (m_pos - prev_m_pos);
-	//auto Clamp = [](float value, float a, float b) { return std::fmaxf(a, std::fminf(value, b)); };
 	
 	if (!IsPointInLevel(selected_shape->position + move_step)) return;
-	
-	/*olc::vf2d new_pos = selected_shape->position + move_step;
-
-	const olc::vf2d& world_top_left = ToScreen({ 0.0f, 0.0f });
-	const olc::vf2d& world_bottom_right = ToScreen((olc::vf2d)level_size);
-
-	new_pos.x = Clamp(new_pos.x, world_top_left.x, world_bottom_right.x);
-	new_pos.y = Clamp(new_pos.y, world_top_left.y, world_bottom_right.y);*/
 
 	if (move_step.mag2() > 0.0f) press_m_pos = m_pos;
 	selected_shape->position += move_step;
 }
 
+void EditState::MoveVertex(const olc::vf2d& m_pos) {
+	olc::vf2d move_step;
+	if (is_snap_to_grid) move_step = olc::vi2d((m_pos - press_m_pos) / (float)unit_size) * (float)unit_size;
+	else move_step = (m_pos - prev_m_pos);
+
+	auto IsConcavePolygon = [&]() -> bool {
+		for (int b = 0; b < selected_shape->n_vertices; b++) {
+			int a = (b + selected_shape->n_vertices - 1) % selected_shape->n_vertices;
+			int c = (b + 1) % selected_shape->n_vertices;
+
+			const olc::vf2d& ba = selected_shape->GetVertex(a) - selected_shape->GetVertex(b);
+			const olc::vf2d& bc = selected_shape->GetVertex(c) - selected_shape->GetVertex(b);
+		
+			if (ba.cross(bc) > 0.0f) return true;
+		}
+		return false;
+	};
+
+	if (!IsPointInLevel(*selected_vertex + move_step)) return;
+	if (move_step.mag2() > 0.0f) press_m_pos = m_pos;
+	
+	*selected_vertex += move_step;
+	if (IsConcavePolygon()) {
+		*selected_vertex -= move_step;
+	}
+}
 
 void EditState::Input() {
 	bool is_gui_input = false;
+	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
+	const olc::vf2d& world_m_pos = ToWorld(m_pos);
 	
 	// GUI
-	is_gui_input |= button_panel.Input(pge);
-	ButtonFunctions();
-
+	is_gui_input |= button_panel.Input(pge); ButtonFunctions();
 	is_gui_input |= box_panel.Input(pge);
+
 	bool is_change_polygon_color = color_panel.Input(pge);
 	if (is_change_polygon_color) layers["fg"].is_update = true;
 
 	is_gui_input |= is_change_polygon_color;
 	
-	if (pge->GetMouse(0).bPressed && add_polygon) {
-		polygons.push_back(PolygonShape{ add_polygon->n_vertices, add_polygon->scale, add_polygon->position, add_polygon->color });
-		delete add_polygon;
-		add_polygon = nullptr;
-	}
-
-	is_gui_input |= poly_panel.Input(pge);
-	ListBoxFunctions();
+	// Adding functions
+	if (pge->GetMouse(0).bPressed && add_polygon) { OnMousePressAdd(world_m_pos); }
+	is_gui_input |= poly_panel.Input(pge); ListBoxFunctions();
 
 	if (is_gui_input && !add_polygon) return;
 	
 	// Editing functions
-	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
-	const olc::vf2d& world_m_pos = ToWorld(m_pos);
-
 	if (!add_polygon) {
 		OnMousePressEdit(world_m_pos);
-		//if (pge->GetMouse(0).bPressed) { OnMousePressEdit(world_m_pos); }
 		if (pge->GetMouse(0).bHeld) { OnMouseHoldEdit(m_pos, world_m_pos); }
 		if (pge->GetMouse(0).bReleased) { OnMouseReleaseEdit(); }
 	}
 
-	// Adding functions
-	/*if (pge->GetMouse(1).bPressed) {
-		PolygonShape poly = PolygonShape{ 3 + rand() % 4, { 25.0f, 25.0f }, ToGrid(world_m_pos), olc::Pixel(rand() % 256, rand() % 256, rand() % 256) };
-		polygons.push_back(poly);
-		layers["fg"].is_update = true;
-	}*/
+	if (pge->GetKey(olc::R).bReleased) { RemovePolygon(); }
 
 	// Panning functions
-	if (pge->GetMouse(2).bHeld) {
-		offset += -(m_pos - prev_m_pos);
-		layers["bg"].is_update = true;
-		layers["fg"].is_update = true;
-	}
+	if (pge->GetMouse(2).bHeld) { PanLevel(m_pos); }
 
 	prev_m_pos = m_pos;
 }
@@ -161,12 +166,8 @@ void EditState::Update() {
 	}
 
 	if (add_polygon) {
-		if (is_snap_to_grid) {
-			add_polygon->position = ToGrid(m_pos);
-		}
-		else {
-			add_polygon->position = m_pos;
-		}
+		if (is_snap_to_grid) { add_polygon->position = ToGrid(m_pos); }
+		else { add_polygon->position = m_pos; }
 		add_polygon->Update(true);
 	}
 }
@@ -175,14 +176,14 @@ void EditState::DrawBackground() {
 	if (!layers["bg"].is_update) return;
 	
 	pge->SetDrawTarget(layers["bg"].id);
-	pge->Clear(olc::BLACK);
+	pge->Clear(olc::CYAN * 0.1f);
 
 	if (layers["bg"].state) {
-		for (int i = 0; i < level_size.y / unit_size + 1; i++) {
+		for (int i = 0; i < level_size.y / (int)unit_size + 1; i++) {
 			pge->DrawLine((olc::vi2d)ToScreen({ 0.0f, (float)i * unit_size }),
 				(olc::vi2d)ToScreen({ (float)level_size.x, (float)i * unit_size }), olc::DARK_CYAN);
 		}
-		for (int i = 0; i < level_size.x / unit_size + 1; i++) {
+		for (int i = 0; i < level_size.x / (int)unit_size + 1; i++) {
 			pge->DrawLine((olc::vi2d)ToScreen({ (float)i * unit_size, 0.0f }),
 				(olc::vi2d)ToScreen({ (float)i * unit_size, (float)level_size.y }), olc::DARK_CYAN);
 		}
@@ -206,6 +207,9 @@ void EditState::Draw() {
 			pge->FillCircle((olc::vi2d)ToScreen(selected_shape->position), 5, olc::RED);
 			//DrawArrow(pge, selected_shape->position, { cosf(selected_shape->angle), sinf(selected_shape->angle) }, 100.0f, 5.0f, olc::BLUE);
 			//pge->DrawString(0, 0, "Angle: " + std::to_string(selected_shape->angle));
+		
+			for (auto& v : selected_shape->GetVertices()) pge->FillCircle((olc::vi2d)v, 5, selected_shape->color * 0.8f);
+			if (selected_vertex) pge->FillCircle((olc::vi2d)ToScreen(*selected_vertex), 5, olc::MAGENTA);
 		}
 		layers["fg"].is_update = false;
 		pge->SetDrawTarget(nullptr);
@@ -214,10 +218,10 @@ void EditState::Draw() {
 	const olc::vi2d& m_pos = pge->GetMousePos();
 
 	switch (edit_feature) {
-	case EditFeature::SCALE:
+	/*case EditFeature::SCALE:
 		pge->FillCircle(m_pos, 5, olc::BLUE);
 		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Scale", olc::BLUE);
-		break;
+		break;*/
 	case EditFeature::ROTATE:
 		pge->FillCircle(m_pos, 5, olc::GREEN);
 		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Rotate", olc::GREEN);
@@ -225,6 +229,10 @@ void EditState::Draw() {
 	case EditFeature::TRANSLATE:
 		pge->FillCircle(m_pos, 5, olc::CYAN);
 		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Translate", olc::CYAN);
+		break;
+	case EditFeature::VERTEX:
+		pge->FillCircle(m_pos, 5, olc::MAGENTA);
+		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Move Vertex", olc::YELLOW);
 		break;
 	}
 
@@ -247,6 +255,12 @@ void EditState::Draw() {
 
 	// Adding functions
 	if (add_polygon) add_polygon->Draw(pge, offset, is_polygon_fill);
+}
+
+void EditState::PanLevel(const olc::vf2d& m_pos) {
+	offset += -(m_pos - prev_m_pos);
+	layers["bg"].is_update = true;
+	layers["fg"].is_update = true;
 }
 
 void EditState::ButtonFunctions() {
@@ -279,19 +293,19 @@ void EditState::ListBoxFunctions() {
 
 	if (poly_panel("Add Triangle")->is_pressed) {
 		if (add_polygon) delete add_polygon;
-		add_polygon = new PolygonShape{ 3, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f };
+		add_polygon = new PolygonShape{ 3, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f, id_count++ };
 		add_polygon->Update(true);
 		poly_panel.is_render = false;
 	}
 	else if (poly_panel("Add Square")->is_pressed) {
 		if (add_polygon) delete add_polygon;
-		add_polygon = new PolygonShape{ 4, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f };
+		add_polygon = new PolygonShape{ 4, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f, id_count++ };
 		add_polygon->Update(true);
 		poly_panel.is_render = false;
 	} 
 	else if (poly_panel("Add Pentagon")->is_pressed) {
 		if (add_polygon) delete add_polygon;
-		add_polygon = new PolygonShape{ 5, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f };
+		add_polygon = new PolygonShape{ 5, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f, id_count++ };
 		add_polygon->Update(true);
 		poly_panel.is_render = false;
 	}
@@ -299,9 +313,18 @@ void EditState::ListBoxFunctions() {
 
 void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 	bool is_bounds = false;
+
+	auto ScalePolygon = [](float scaling_factor, const PolygonShape& ref_poly) -> PolygonShape {
+		PolygonShape poly = ref_poly;
+		for (int i = 0; i < poly.n_vertices; i++) {
+			poly.GetVertex(i) += (poly.GetVertex(i) - poly.position) * scaling_factor;
+		}
+		return poly;
+	};
+
 	for (auto& poly : polygons) {
-		PolygonShape test_poly_s = poly; test_poly_s.scale *= 0.8f; test_poly_s.Update(true);
-		PolygonShape test_poly_r = poly; test_poly_r.scale *= 1.2f; test_poly_r.Update(true);
+		const PolygonShape& test_poly_s = ScalePolygon(-0.2f, poly);
+		const PolygonShape& test_poly_r = ScalePolygon(+0.2f, poly);
 
 		const bool& is_point_in_bounds = poly.IsPointInBounds(world_m_pos);
 		uint8_t is_point_translate = (uint8_t)test_poly_s.IsPointInBounds(world_m_pos);
@@ -315,6 +338,7 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 				is_bounds = true;
 				if (pge->GetMouse(0).bPressed) {
 					selected_shape = &poly;
+					selected_vertex = nullptr;
 					press_m_pos = world_m_pos;
 
 					box_panel("Mass")->value = selected_shape->properties.mass;
@@ -331,12 +355,22 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 				if (flags & 1) edit_feature = EditFeature::TRANSLATE;
 				else if (flags & 2) edit_feature = EditFeature::SCALE;
 				else if (flags & 4) edit_feature = EditFeature::ROTATE;
+
+				if (selected_shape) {
+					olc::vf2d* vertex = selected_shape->GetVertexInBounds(world_m_pos, 5.0f);
+					if (vertex) {
+						selected_vertex = vertex;
+						edit_feature = EditFeature::VERTEX;
+					}
+				}
 				break;
 			}
 			else { edit_feature = EditFeature::NONE; }
 		}
 	}
-	if (!is_bounds && pge->GetMouse(0).bPressed) selected_shape = nullptr;
+	if (!is_bounds && pge->GetMouse(0).bPressed) {
+		selected_shape = nullptr;
+	}
 }
 
 void EditState::OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m_pos) {
@@ -348,19 +382,41 @@ void EditState::OnMouseHoldEdit(const olc::vf2d& m_pos, const olc::vf2d& world_m
 	if (selected_shape) {
 		selected_shape->is_update_shape = true;
 		switch (edit_feature) {
-		case EditFeature::SCALE: Scale(m_pos); break;
+		//case EditFeature::SCALE: Scale(m_pos); break;
 		case EditFeature::ROTATE: Rotate(m_pos); break;
 		case EditFeature::TRANSLATE: Translate(world_m_pos); break;
+		case EditFeature::VERTEX: MoveVertex(world_m_pos); break;
 		}
 		if (is_snap_to_grid) ToGridPolygon(*selected_shape);
 	}
 	else { 
-		box_panel.is_render = false; 
-		color_panel.is_render = false;
+		IsRenderGUI(false);
 	}
 }
 
 void EditState::OnMouseReleaseEdit() {
 	edit_feature = EditFeature::NONE;
 	is_feature = false;
+}
+
+void EditState::OnMousePressAdd(const olc::vf2d& world_m_pos) {
+	polygons.push_back(PolygonShape{ add_polygon->n_vertices, add_polygon->scale, add_polygon->position, add_polygon->color, add_polygon->id });
+	delete add_polygon;
+	add_polygon = nullptr;
+}
+
+void EditState::RemovePolygon() {
+	if (!selected_shape) return;
+
+	for (int i = polygons.size() - 1; i >= 0; i--) {
+		if (polygons[i].id == selected_shape->id) {
+			selected_shape = nullptr;
+
+			IsRenderGUI(false);
+			layers["fg"].is_update = true;
+
+			polygons.erase(polygons.begin() + i);
+			break;
+		}
+	}
 }
