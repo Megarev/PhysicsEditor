@@ -17,6 +17,7 @@ struct PhysicsData {
 	float mass = 0.0f;
 	float e = 0.0f; // Coefficient of restitution
 	float sf = 0.0f, df = 0.0f; // Static and dynamic friction
+	float angular_velocity = 0.0f;
 };
 
 class PolygonShape {

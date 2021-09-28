@@ -10,23 +10,28 @@ EditState::EditState(olc::PixelGameEngine* pge)
 
 	level_size = { pge->ScreenWidth(), pge->ScreenHeight() };
 
-	polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, (olc::vf2d)level_size / 2.0f, olc::WHITE, id_count++ });
+	//polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, (olc::vf2d)level_size / 2.0f, olc::WHITE, id_count++ });
 	edit_feature = EditFeature::NONE;
 
 	unit_size = 32;
-	uint32_t fg_layer = pge->CreateLayer();
+	
+	uint32_t fg_layer = LayerManager::Get().GetLayer("fg");
+	//uint32_t fg_layer = pge->CreateLayer();
 	pge->EnableLayer(fg_layer, true);
 	layers.insert({ "fg", { fg_layer, true, true } });
 	
-	uint32_t bg_layer = pge->CreateLayer();
+	uint32_t bg_layer = LayerManager::Get().GetLayer("bg");
+	//uint32_t bg_layer = pge->CreateLayer();
 	pge->EnableLayer(bg_layer, true);
 	layers.insert({ "bg", { bg_layer, true, true } });
 
+
 	// GUI
 	button_panel = gui::ButtonPanel{ { 1, 1 }, { pge->ScreenWidth() - 2, 36 }, olc::WHITE };
+	button_panel.AddButton("Play", olc::GREEN);
 	button_panel.AddButton("ToggleGrid", olc::MAGENTA);
 	button_panel.AddButton("ToggleDrawMode", olc::CYAN);
-	button_panel.AddButton("ToggleSnapToGrid", olc::GREEN, true);
+	button_panel.AddButton("ToggleSnapToGrid", olc::YELLOW, true);
 
 	const olc::vi2d& box_size = { 150, 16 }, panel_size = { 220, 100 };
 	box_panel = gui::DragBoxPanel({ 32, 32 }, panel_size, olc::DARK_YELLOW, "Properties");
@@ -36,6 +41,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	box_panel.AddDragBox("e", olc::BLUE, { 0.0f, 1.0f }, box_size, 0.1f);
 	box_panel.AddDragBox("sf", olc::BLUE, { 0.0f, 1.0f }, box_size, 0.6f);
 	box_panel.AddDragBox("df", olc::BLUE, { 0.0f, 1.0f }, box_size, 0.25f);
+	box_panel.AddDragBox("w", olc::BLUE, { -5.0f, 5.0f }, box_size, 0.0f);
 
 	color_panel = gui::ColorPanel({ 32, pge->ScreenHeight() - 200 }, { 150, 150 }, olc::VERY_DARK_BLUE, "images/color_wheel.png");
 	color_panel.is_render = false;
@@ -161,6 +167,7 @@ void EditState::Update() {
 		selected_shape->properties.e = box_panel("e")->value;
 		selected_shape->properties.sf = box_panel("sf")->value;
 		selected_shape->properties.df = box_panel("df")->value;
+		selected_shape->properties.angular_velocity = box_panel("w")->value;
 
 		selected_shape->color = color_panel.color_picker.selected_color;
 	}
@@ -239,6 +246,9 @@ void EditState::Draw() {
 
 	// GUI
 	button_panel.Draw(pge);
+	if (button_panel("Play")->IsPointInBounds(m_pos)) {
+		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
+	}
 	if (button_panel("ToggleGrid")->IsPointInBounds(m_pos)) {
 		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
 	}
@@ -266,7 +276,13 @@ void EditState::PanLevel(const olc::vf2d& m_pos) {
 void EditState::ButtonFunctions() {
 	if (!button_panel.buttons.size()) return;
 
-	if (button_panel("ToggleGrid")->is_pressed) {
+	if (button_panel("Play")->is_pressed) {
+		ChangeState(States::PLAY);
+		for (auto& layer : layers) {
+			pge->EnableLayer(layer.second.id, false);
+		}
+	}
+	else if (button_panel("ToggleGrid")->is_pressed) {
 		LayerData& data = layers["bg"];
 		data.state = !data.state;
 		data.is_update = true;
@@ -345,6 +361,7 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 					box_panel("e")->value = selected_shape->properties.e;
 					box_panel("sf")->value = selected_shape->properties.sf;
 					box_panel("df")->value = selected_shape->properties.df;
+					box_panel("w")->value = selected_shape->properties.angular_velocity;
 
 					color_panel.color_picker.selected_color = selected_shape->color;
 
@@ -419,4 +436,62 @@ void EditState::RemovePolygon() {
 			break;
 		}
 	}
+}
+
+
+
+PlayState::PlayState(olc::PixelGameEngine* pge)
+	: State(pge) {
+	edit_button = gui::Button{ { 1, 1 }, { 32, 32 }, olc::BLUE };
+	scene.Initialize(olc::vf2d{ (float)pge->ScreenWidth(), (float)pge->ScreenHeight() });
+}
+
+void PlayState::Initialize() {
+	for (auto& p : polygons) {
+		RigidBody rb(p.position, p.GetVertices(), p.angle, p.properties.angular_velocity, p.properties.mass, p.properties.e, p.properties.sf, p.properties.df, p.id);
+		//RigidBody rb(p.position, p.n_vertices, p.scale.mag(), p.angle, 0.1f, p.properties.mass, p.properties.e, p.properties.sf, p.properties.df, p.id);
+		rb.SetColor(p.color);
+		scene.AddShape(rb);
+		//rb_list.push_back(rb);
+	}
+}
+
+void PlayState::Input() {
+	edit_button.Input(pge);
+	
+	if (pge->GetMouse(0).bPressed) {
+		RigidBody rb((olc::vf2d)pge->GetMousePos() + offset, 3 + rand() % 2, 10.0f, 0.0f, 1.0f, 0.1f, 0.8f, 0.4f, 0);
+		rb.SetColor(olc::WHITE);
+		scene.AddShape(rb);
+	}
+}
+
+void PlayState::Update() {
+	if (edit_button.is_pressed) {
+		ChangeState(States::EDIT);
+		return;
+	}
+
+	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
+
+	int n_iter = 2;
+	for (int i = 0; i < n_iter; i++) scene.Update(pge->GetElapsedTime());
+	if (pge->GetMouse(2).bHeld) {
+		offset += -(m_pos - prev_m_pos);
+	}
+
+	prev_m_pos = m_pos;
+}
+
+
+void PlayState::Draw() {
+
+	scene.Draw(pge, offset /* + olc::vf2d{pge->ScreenWidth() * 0.5f, pge->ScreenHeight() * 0.5f} */, true);
+
+	// GUI
+	edit_button.Draw(pge);
+}
+
+void PlayState::DrawBackground() {
+
 }

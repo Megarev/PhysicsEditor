@@ -1,5 +1,6 @@
 #define OLC_PGE_APPLICATION
 #include "olcPixelGameEngine.h"
+#define PHYSICS_H
 #include "editor.h"
 
 class App : public olc::PixelGameEngine {
@@ -19,6 +20,9 @@ public:
 	}
 
 	bool OnUserUpdate(float dt) override {
+
+		// State Machine
+		editor.StateUpdate();
 
 		// Input
 		editor.Input();

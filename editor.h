@@ -10,6 +10,9 @@ public:
 	Editor() {}
 	Editor(olc::PixelGameEngine* p)
 		: pge(p) {
+		LayerManager::Get().AddLayer(pge, "fg");
+		LayerManager::Get().AddLayer(pge, "bg");
+
 		state = std::make_unique<EditState>(pge);
 	}
 
@@ -17,4 +20,6 @@ public:
 	void Update() { state->Update(); }
 	void Draw() { state->Draw(); }
 	void DrawBackground() { state->DrawBackground(); }
+	
+	void StateUpdate();
 };

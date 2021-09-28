@@ -2,15 +2,53 @@
 #include "olcPixelGameEngine.h"
 #include "polygon.h"
 #include "gui.h"
+#include "physics.h"
+
+class LayerManager {
+private:
+	LayerManager() {}
+	std::unordered_map<std::string, uint32_t> layer_data;
+public:
+	static LayerManager& Get() {
+		static LayerManager layer_mgr;
+		return layer_mgr;
+	}
+
+	void AddLayer(olc::PixelGameEngine* pge, const std::string& name) {
+		layer_data.insert({ name, pge->CreateLayer() });
+	}
+
+	uint32_t GetLayer(const std::string& name) {
+		return layer_data[name];
+	}
+};
+
 
 class State {
 protected:
 	olc::PixelGameEngine* pge = nullptr;
 	const float PI = 3.1415926f;
 public:
+	std::vector<PolygonShape> polygons;
+public:
+	olc::vf2d offset; // Panning
+
+	bool is_state_change = false;
+	enum class States {
+		EDIT,
+		PLAY
+	} state = States::EDIT;
+
 	State() {}
 	State(olc::PixelGameEngine* p)
 		: pge(p) {}
+
+	void ChangeState(const States& new_state) {
+		state = new_state;
+		is_state_change = true;
+	}
+
+	virtual void Initialize() {}
 
 	virtual void Input() = 0;
 	virtual void Update() = 0;
@@ -20,11 +58,10 @@ public:
 
 class EditState : public State {
 private: // Main editor
-	std::vector<PolygonShape> polygons;
 	bool is_polygon_fill = false, is_update_render = false;
 	bool is_snap_to_grid = true;
 
-	olc::vf2d offset; // Panning
+	//olc::vf2d offset; // Panning
 	olc::vi2d level_size;
 	uint32_t id_count = 0;
 
@@ -75,6 +112,25 @@ private: // GUI
 	void IsRenderGUI(bool state);
 public:
 	EditState(olc::PixelGameEngine* pge);
+
+	void Input() override;
+	void Update() override;
+	void Draw() override;
+	void DrawBackground() override;
+};
+
+class PlayState : public State {
+private:
+	// GUI
+	gui::Button edit_button;
+private:
+	// Main play
+	Scene scene;
+	olc::vf2d prev_m_pos;
+public:
+	PlayState(olc::PixelGameEngine* pge);
+
+	void Initialize() override;
 
 	void Input() override;
 	void Update() override;
