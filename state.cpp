@@ -173,7 +173,7 @@ void EditState::Update() {
 	}
 
 	if (add_polygon) {
-		if (is_snap_to_grid) { add_polygon->position = ToWorld(ToGrid(m_pos)); }
+		if (is_snap_to_grid) { add_polygon->position = ToGrid(ToWorld(m_pos)); }
 		else { add_polygon->position = ToWorld(m_pos); }
 		add_polygon->Update(true);
 	}
@@ -474,7 +474,7 @@ void PlayState::Update() {
 
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 
-	int n_iter = 2;
+	int n_iter = 5;
 	for (int i = 0; i < n_iter; i++) scene.Update(pge->GetElapsedTime());
 	if (pge->GetMouse(2).bHeld) {
 		offset += -(m_pos - prev_m_pos);

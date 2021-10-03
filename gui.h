@@ -52,6 +52,7 @@ namespace gui {
 	public:
 		float value = 0.0f;
 		olc::vi2d prev_m_pos;
+		Button reset_button;
 
 		float speed = 0.01f;
 

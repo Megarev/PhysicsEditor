@@ -69,11 +69,14 @@ gui::Button* gui::ButtonPanel::operator()(const std::string& name) {
 
 
 gui::DragBox::DragBox(const olc::vi2d& _position, const olc::vf2d& _size, const olc::Pixel& _color, float start_value)
-	: BoxUIBase(_position, _size, _color), value(start_value) {}
+	: BoxUIBase(_position, _size, _color), value(start_value), reset_button(_position + olc::vi2d{ (int)size.x + 2, 0 }, { (int)_size.y, (int)_size.y }, color) {}
 
 bool gui::DragBox::Input(olc::PixelGameEngine* pge) {
 	const olc::vi2d& m_pos = pge->GetMousePos();
 	int dir = m_pos.x > position.x + size.x / 2 ? 1 : -1;
+
+	reset_button.Input(pge);
+	//reset_button.position = position + olc::vi2d{ size.x, 0 };
 
 	color = init_color * 0.25f;
 	if (IsPointInBounds(m_pos)) {
@@ -91,6 +94,8 @@ bool gui::DragBox::Input(olc::PixelGameEngine* pge) {
 
 	prev_m_pos = m_pos;
 
+	if (!is_pressed && reset_button.is_pressed) value = 0.0f;
+
 	return is_pressed;
 
 }
@@ -104,6 +109,9 @@ void gui::DragBox::Draw(olc::PixelGameEngine* pge) {
 	int text_scale = size.y / (2 * text_size.y);
 
 	pge->DrawStringProp(position + olc::vi2d{ (int)((size.x - text_size.x) / 2), (int)(3 * size.y / text_size.y) }, value_str, olc::WHITE, text_scale > 2 ? text_scale : 1);
+
+	reset_button.Draw(pge);
+	pge->DrawStringProp(reset_button.position + olc::vi2d{ (int)((reset_button.size.x - pge->GetTextSizeProp("0").x) / 2), (int)(3 * size.y / text_size.y)}, "0", olc::WHITE, text_scale > 2 ? text_scale : 1);
 }
 
 
@@ -138,7 +146,10 @@ bool gui::DragBoxPanel::Input(olc::PixelGameEngine* pge) {
 
 	if (pge->GetMouse(0).bHeld && is_pressed) {
 		position += (m_pos - prev_m_pos);
-		for (auto& box : drag_boxes) box.second.position += (m_pos - prev_m_pos);
+		for (auto& box : drag_boxes) {
+			box.second.position += (m_pos - prev_m_pos);
+			box.second.reset_button.position += (m_pos - prev_m_pos);
+		}
 	}
 
 	if (pge->GetMouse(0).bReleased) {
