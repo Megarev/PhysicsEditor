@@ -32,6 +32,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	button_panel.AddButton("ToggleGrid", olc::MAGENTA);
 	button_panel.AddButton("ToggleDrawMode", olc::CYAN);
 	button_panel.AddButton("ToggleSnapToGrid", olc::YELLOW, true);
+	button_panel.AddButton("ToggleMassMode", olc::WHITE, true);
 
 	const olc::vi2d& box_size = { 150, 16 }, panel_size = { 220, 100 };
 	box_panel = gui::DragBoxPanel({ 32, 32 }, panel_size, olc::DARK_YELLOW, "Properties");
@@ -129,12 +130,11 @@ void EditState::Input() {
 	const olc::vf2d& world_m_pos = ToWorld(m_pos);
 	
 	// GUI
-	is_gui_input |= button_panel.Input(pge); ButtonFunctions();
 	is_gui_input |= box_panel.Input(pge);
-
 	bool is_change_polygon_color = color_panel.Input(pge);
-	if (is_change_polygon_color) layers["fg"].is_update = true;
-
+	if (is_change_polygon_color | is_gui_input) layers["fg"].is_update = true;
+	
+	is_gui_input |= button_panel.Input(pge); ButtonFunctions();
 	is_gui_input |= is_change_polygon_color;
 	
 	// Adding functions
@@ -170,6 +170,7 @@ void EditState::Update() {
 		selected_shape->properties.angular_velocity = box_panel("w")->value;
 
 		selected_shape->color = color_panel.color_picker.selected_color;
+		selected_shape->init_color = color_panel.color_picker.selected_color;
 	}
 
 	if (add_polygon) {
@@ -209,7 +210,11 @@ void EditState::Draw() {
 		pge->SetDrawTarget(layers["fg"].id);
 		pge->Clear(olc::BLANK);
 		
-		for (auto& p : polygons) p.Draw(pge, offset, is_polygon_fill);
+		for (auto& p : polygons) {
+			if (is_mass_mode) p.color = olc::WHITE * (p.properties.mass / mass_m);
+			else p.color = p.init_color;
+			p.Draw(pge, offset, is_polygon_fill);
+		}
 		if (selected_shape) {
 			pge->FillCircle((olc::vi2d)ToScreen(selected_shape->position), 5, olc::RED);
 			//DrawArrow(pge, selected_shape->position, { cosf(selected_shape->angle), sinf(selected_shape->angle) }, 100.0f, 5.0f, olc::BLUE);
@@ -258,6 +263,9 @@ void EditState::Draw() {
 	else if (button_panel("ToggleSnapToGrid")->IsPointInBounds(m_pos)) {
 		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Snap to Grid", olc::MAGENTA);
 	}
+	else if (button_panel("ToggleMassMode")->IsPointInBounds(m_pos)) {
+		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
+	}
 
 	box_panel.Draw(pge);
 	color_panel.Draw(pge);
@@ -298,6 +306,9 @@ void EditState::ButtonFunctions() {
 				poly.position = ToGrid(poly.position);
 			}
 		}
+	}
+	else if (button_panel("ToggleMassMode")->is_pressed) {
+		is_mass_mode = !is_mass_mode;
 	}
 }
 
@@ -438,6 +449,16 @@ void EditState::RemovePolygon() {
 	}
 }
 
+void EditState::CopyPolygon(const olc::vf2d& pos) {
+	if (!selected_shape) return;
+
+	if (add_polygon) delete add_polygon;
+	add_polygon = new PolygonShape(selected_shape->n_vertices, selected_shape->scale, pos, selected_shape->color, id_count++);
+	for (int i = 0; i < add_polygon->n_vertices; i++) {
+		add_polygon->GetVertex(i) = selected_shape->GetVertex(i);
+	}
+}
+
 
 
 PlayState::PlayState(olc::PixelGameEngine* pge)
@@ -486,7 +507,7 @@ void PlayState::Update() {
 
 void PlayState::Draw() {
 
-	scene.Draw(pge, offset /* + olc::vf2d{pge->ScreenWidth() * 0.5f, pge->ScreenHeight() * 0.5f} */, true);
+	scene.Draw(pge, offset /* + olc::vf2d{pge->ScreenWidth() * 0.5f, pge->ScreenHeight() * 0.5f} */, is_polygon_fill);
 
 	// GUI
 	edit_button.Draw(pge);

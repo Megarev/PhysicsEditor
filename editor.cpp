@@ -9,7 +9,9 @@ void Editor::StateUpdate() {
 
 			const std::vector<PolygonShape> polygons = play_state->polygons;
 			const olc::vf2d offset = play_state->offset;
+			const bool is_polygon_fill = play_state->is_polygon_fill;
 			state = std::make_unique<EditState>(pge);
+			state->is_polygon_fill = is_polygon_fill;
 			state->polygons = polygons;
 			state->offset = offset;
 		}
@@ -19,11 +21,13 @@ void Editor::StateUpdate() {
 
 			const olc::vf2d offset = edit_state->offset;
 			const std::vector<PolygonShape> polygons = edit_state->polygons;
-			std::cout << "PolygonData: " << offset << " " << polygons.size() << std::endl;
+			const bool is_polygon_fill = edit_state->is_polygon_fill;
+			//std::cout << "PolygonData: " << offset << " " << polygons.size() << std::endl;
 
 			state = std::make_unique<PlayState>(pge);
 			state->offset = offset;
 			state->polygons = polygons;
+			state->is_polygon_fill = is_polygon_fill;
 			state->Initialize();
 		}
 		break;

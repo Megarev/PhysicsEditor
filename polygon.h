@@ -26,7 +26,7 @@ private:
 	float PI = 3.1415926f;
 public:
 	olc::vf2d position, prev_position, scale;
-	olc::Pixel color;
+	olc::Pixel init_color, color;
 	float angle = 0.0f, prev_angle = 0.0f;
 	int n_vertices = 0;
 

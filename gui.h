@@ -54,7 +54,7 @@ namespace gui {
 		olc::vi2d prev_m_pos;
 		Button reset_button;
 
-		float speed = 0.01f;
+		float speed = 0.1f;
 
 		std::pair<float, float> value_constraints = { -INFINITY, INFINITY };
 	public:

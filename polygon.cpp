@@ -1,7 +1,7 @@
 #include "polygon.h"
 
 PolygonShape::PolygonShape(int _n_vertices, const olc::vf2d& size, const olc::vf2d& pos, const olc::Pixel& col, uint32_t _id)
-	: n_vertices(_n_vertices), color(col), scale(size), prev_position(pos), position(pos), id(_id) {
+	: n_vertices(_n_vertices), init_color(col), color(col), scale(size), prev_position(pos), position(pos), id(_id) {
 	vertices.resize(n_vertices);
 
 	for (int i = 0; i < n_vertices; i++) {

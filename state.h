@@ -32,6 +32,7 @@ public:
 	std::vector<PolygonShape> polygons;
 public:
 	olc::vf2d offset; // Panning
+	bool is_polygon_fill = false;
 
 	bool is_state_change = false;
 	enum class States {
@@ -58,8 +59,10 @@ public:
 
 class EditState : public State {
 private: // Main editor
-	bool is_polygon_fill = false, is_update_render = false;
+	bool is_update_render = false;
 	bool is_snap_to_grid = true;
+	bool is_mass_mode = false;
+	float mass_m = 100.0f;
 
 	//olc::vf2d offset; // Panning
 	olc::vi2d level_size;
@@ -84,6 +87,8 @@ private: // Editing functions
 
 	void OnMousePressAdd(const olc::vf2d& world_m_pos);
 	void RemovePolygon();
+
+	void CopyPolygon(const olc::vf2d& pos);
 
 	bool is_feature = false; // Is edit feature being used
 	
