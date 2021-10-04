@@ -14,7 +14,8 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	edit_feature = EditFeature::NONE;
 
 	unit_size = 32;
-	
+	icon_set.Load("images/iconset.png");
+
 	uint32_t fg_layer = LayerManager::Get().GetLayer("fg");
 	//uint32_t fg_layer = pge->CreateLayer();
 	pge->EnableLayer(fg_layer, true);
@@ -27,12 +28,13 @@ EditState::EditState(olc::PixelGameEngine* pge)
 
 
 	// GUI
+	const olc::vi2d& button_size = { 36, 36 };
 	button_panel = gui::ButtonPanel{ { 1, 1 }, { pge->ScreenWidth() - 2, 36 }, olc::WHITE };
-	button_panel.AddButton("Play", olc::GREEN);
-	button_panel.AddButton("ToggleGrid", olc::MAGENTA);
-	button_panel.AddButton("ToggleDrawMode", olc::CYAN);
-	button_panel.AddButton("ToggleSnapToGrid", olc::YELLOW, true);
-	button_panel.AddButton("ToggleMassMode", olc::WHITE, true);
+	button_panel.AddButton("Play", olc::GREEN, false, { 0, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("ToggleGrid", olc::MAGENTA, false, { button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("ToggleDrawMode", olc::CYAN, false, { 2 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("ToggleSnapToGrid", olc::YELLOW, true, { 3 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("ToggleMassMode", olc::WHITE, true, { 4 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 
 	const olc::vi2d& box_size = { 150, 16 }, panel_size = { 220, 100 };
 	box_panel = gui::DragBoxPanel({ 32, 32 }, panel_size, olc::DARK_YELLOW, "Properties");
@@ -47,10 +49,11 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	color_panel = gui::ColorPanel({ 32, pge->ScreenHeight() - 200 }, { 150, 150 }, olc::VERY_DARK_BLUE, "images/color_wheel.png");
 	color_panel.is_render = false;
 
-	poly_panel = gui::ListBox{ { 0, 0 }, { 100, 100 }, olc::VERY_DARK_YELLOW, 10 };
+	poly_panel = gui::ListBox{ { 0, 0 }, { 100, 100 }, olc::VERY_DARK_RED, 10 };
 	poly_panel.AddItem("Add Triangle", olc::CYAN);
 	poly_panel.AddItem("Add Square", olc::CYAN);
 	poly_panel.AddItem("Add Pentagon", olc::CYAN);
+	poly_panel.AddItem("Add Hexagon", olc::CYAN);
 }
 
 bool EditState::IsPointInLevel(const olc::vf2d& point) const {
@@ -142,6 +145,11 @@ void EditState::Input() {
 	is_gui_input |= poly_panel.Input(pge); ListBoxFunctions();
 
 	if (is_gui_input && !add_polygon) return;
+
+
+	if (!add_polygon && pge->GetKey(olc::C).bHeld && pge->GetKey(olc::CTRL).bHeld) {
+		CopyPolygon(world_m_pos);
+	}
 	
 	// Editing functions
 	if (!add_polygon) {
@@ -250,7 +258,7 @@ void EditState::Draw() {
 
 
 	// GUI
-	button_panel.Draw(pge);
+	button_panel.DrawSprite(pge);
 	if (button_panel("Play")->IsPointInBounds(m_pos)) {
 		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
 	}
@@ -286,6 +294,12 @@ void EditState::ButtonFunctions() {
 
 	if (button_panel("Play")->is_pressed) {
 		ChangeState(States::PLAY);
+		color_panel.Clear();
+		box_panel.Clear();
+		button_panel.Clear();
+
+		//for (auto& poly : polygons) poly.color = poly.init_color;
+
 		for (auto& layer : layers) {
 			pge->EnableLayer(layer.second.id, false);
 		}
@@ -333,6 +347,12 @@ void EditState::ListBoxFunctions() {
 	else if (poly_panel("Add Pentagon")->is_pressed) {
 		if (add_polygon) delete add_polygon;
 		add_polygon = new PolygonShape{ 5, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f, id_count++ };
+		add_polygon->Update(true);
+		poly_panel.is_render = false;
+	}
+	else if (poly_panel("Add Hexagon")->is_pressed) {
+		if (add_polygon) delete add_polygon;
+		add_polygon = new PolygonShape{ 6, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f, id_count++ };
 		add_polygon->Update(true);
 		poly_panel.is_render = false;
 	}
@@ -429,6 +449,8 @@ void EditState::OnMouseReleaseEdit() {
 
 void EditState::OnMousePressAdd(const olc::vf2d& world_m_pos) {
 	polygons.push_back(PolygonShape{ add_polygon->n_vertices, add_polygon->scale, add_polygon->position, add_polygon->color, add_polygon->id });
+	for (size_t i = 0; i < add_polygon->n_vertices; i++) polygons.back().GetVertex(i) = add_polygon->GetVertex(i);
+	polygons.back().Update(true);
 	delete add_polygon;
 	add_polygon = nullptr;
 }
@@ -453,18 +475,30 @@ void EditState::CopyPolygon(const olc::vf2d& pos) {
 	if (!selected_shape) return;
 
 	if (add_polygon) delete add_polygon;
-	add_polygon = new PolygonShape(selected_shape->n_vertices, selected_shape->scale, pos, selected_shape->color, id_count++);
+	add_polygon = new PolygonShape(selected_shape->n_vertices, selected_shape->scale, is_snap_to_grid ? ToGrid(pos) : (olc::vi2d)pos, selected_shape->color, id_count++);
+	add_polygon->properties = selected_shape->properties;
 	for (int i = 0; i < add_polygon->n_vertices; i++) {
 		add_polygon->GetVertex(i) = selected_shape->GetVertex(i);
 	}
+	add_polygon->Update(true);
 }
 
 
 
 PlayState::PlayState(olc::PixelGameEngine* pge)
 	: State(pge) {
-	edit_button = gui::Button{ { 1, 1 }, { 32, 32 }, olc::BLUE };
+
+	icon_set.Load("images/pause_button.png");
+
+	const olc::vi2d& button_size = { 36, 36 };
+
+	edit_button = gui::Button{ { 1, 1 }, button_size, olc::WHITE };
+	edit_button.icon_data.spritesheet_ptr = icon_set.Decal();
+	edit_button.icon_data.source_pos = { 0, 0 };
+	edit_button.icon_data.source_size = button_size;
+
 	scene.Initialize(olc::vf2d{ (float)pge->ScreenWidth(), (float)pge->ScreenHeight() });
+
 }
 
 void PlayState::Initialize() {
@@ -510,9 +544,9 @@ void PlayState::Draw() {
 	scene.Draw(pge, offset /* + olc::vf2d{pge->ScreenWidth() * 0.5f, pge->ScreenHeight() * 0.5f} */, is_polygon_fill);
 
 	// GUI
-	edit_button.Draw(pge);
+	edit_button.DrawSprite(pge);
 }
 
 void PlayState::DrawBackground() {
-
+	pge->Clear(olc::Pixel(20, 20, 20));
 }

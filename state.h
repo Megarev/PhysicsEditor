@@ -109,6 +109,8 @@ private: // GUI
 	gui::ColorPanel color_panel;
 	gui::ListBox poly_panel;
 
+	olc::Renderable icon_set;
+
 	void ButtonFunctions();
 	void ListBoxFunctions();
 
@@ -128,6 +130,7 @@ class PlayState : public State {
 private:
 	// GUI
 	gui::Button edit_button;
+	olc::Renderable icon_set;
 private:
 	// Main play
 	Scene scene;

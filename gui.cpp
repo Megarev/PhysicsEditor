@@ -35,14 +35,25 @@ void gui::Button::Draw(olc::PixelGameEngine* pge) {
 	pge->DrawRect(position, size, olc::WHITE);
 }
 
+void gui::Button::DrawSprite(olc::PixelGameEngine* pge) {
+	Draw(pge);
+	//pge->DrawPartialSprite(position, icon_data.spritesheet_ptr, icon_data.source_pos, icon_data.source_size);
+	pge->DrawPartialDecal(position, size, icon_data.spritesheet_ptr, icon_data.source_pos, icon_data.source_size, color);
+}
+
 
 
 gui::ButtonPanel::ButtonPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color)
 	: BoxUIBase(_position, _size, _color) {}
 
-void gui::ButtonPanel::AddButton(const std::string& name, const olc::Pixel& button_color, bool is_toggleable, const olc::vi2d& button_size) {
+void gui::ButtonPanel::AddButton(const std::string& name, const olc::Pixel& button_color,
+	bool is_toggleable, const olc::vi2d& source_pos,
+	const olc::vi2d& source_size, const olc::vi2d& button_size, olc::Decal* decal) {
 	
 	Button button{ position + (int)buttons.size() * olc::vi2d{ button_size.x, 0 }, button_size, button_color, is_toggleable };
+	button.icon_data.source_pos = source_pos;
+	button.icon_data.source_size = source_size;
+	button.icon_data.spritesheet_ptr = decal;
 	buttons.insert({ name, button });
 }
 
@@ -56,6 +67,10 @@ void gui::ButtonPanel::Draw(olc::PixelGameEngine* pge) {
 	pge->FillRect(position, size, olc::VERY_DARK_CYAN);
 	pge->DrawRect(position, size, color);
 	for (auto& button : buttons) button.second.Draw(pge);
+}
+
+void gui::ButtonPanel::DrawSprite(olc::PixelGameEngine* pge) {
+	for (auto& button : buttons) button.second.DrawSprite(pge);
 }
 
 gui::Button* gui::ButtonPanel::operator()(const std::string& name) {
@@ -223,6 +238,10 @@ void gui::ColorPicker::Draw(olc::PixelGameEngine* pge) const {
 	pge->SetPixelMode(olc::Pixel::NORMAL);
 }
 
+void gui::ColorPicker::ClearMemory() {
+	delete color_circle;
+}
+
 gui::ColorPanel::ColorPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& filename) 
 	: BoxUIBase(_position, _size, _color) {
 	int offset = 1;
@@ -261,6 +280,10 @@ void gui::ColorPanel::Draw(olc::PixelGameEngine* pge) {
 	pge->FillRect(position, size, color);
 	pge->DrawRect(position, size, olc::WHITE);
 	color_picker.Draw(pge);
+}
+
+void gui::ColorPanel::Clear() {
+	color_picker.ClearMemory();
 }
 
 gui::ListBox::ListBox(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, int _y_offset)

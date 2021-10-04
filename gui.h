@@ -18,6 +18,13 @@ namespace gui {
 
 		virtual bool Input(olc::PixelGameEngine* pge) = 0;
 		virtual void Draw(olc::PixelGameEngine* pge) = 0;
+
+		virtual void Clear() {}
+	};
+
+	struct IconData {
+		olc::vi2d source_pos, source_size;
+		olc::Decal* spritesheet_ptr = nullptr;
 	};
 
 	class Button : public BoxUIBase {
@@ -25,11 +32,14 @@ namespace gui {
 		bool is_button_toggleable = false;
 		bool is_toggle_state = false;
 	public:
+		IconData icon_data;
+	public:
 		Button() {}
 		Button(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, bool is_toggleable = false);
 
 		bool Input(olc::PixelGameEngine* pge) override;
 		void Draw(olc::PixelGameEngine* pge) override;
+		void DrawSprite(olc::PixelGameEngine* pge);
 	};
 
 	class ButtonPanel : public BoxUIBase {
@@ -39,10 +49,13 @@ namespace gui {
 		ButtonPanel() {}
 		ButtonPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color);
 
-		void AddButton(const std::string& name, const olc::Pixel& button_color, bool is_toggleable = false, const olc::vi2d& button_size = { 32, 32 });
+		void AddButton(const std::string& name, const olc::Pixel& button_color, 
+			bool is_toggleable = false, const olc::vi2d& source_pos = { 0, 0 }, 
+			const olc::vi2d& source_size = { 0, 0 }, const olc::vi2d & button_size = { 32, 32 }, olc::Decal* decal = nullptr);
 
 		bool Input(olc::PixelGameEngine* pge) override;
 		void Draw(olc::PixelGameEngine* pge) override;
+		void DrawSprite(olc::PixelGameEngine* pge);
 
 		Button* operator()(const std::string& name);
 	};
@@ -103,6 +116,8 @@ namespace gui {
 
 		bool Input(olc::PixelGameEngine* pge);
 		void Draw(olc::PixelGameEngine* pge) const;
+
+		void ClearMemory();
 	};
 
 
@@ -117,6 +132,8 @@ namespace gui {
 
 		bool Input(olc::PixelGameEngine* pge) override;
 		void Draw(olc::PixelGameEngine* pge) override;
+
+		void Clear() override;
 	};
 	
 
