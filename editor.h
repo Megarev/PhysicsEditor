@@ -6,6 +6,7 @@ class Editor {
 private:
 	olc::PixelGameEngine* pge = nullptr;
 	std::unique_ptr<State> state;
+	olc::vi2d window_size;
 public:
 	Editor() {}
 	Editor(olc::PixelGameEngine* p)
@@ -13,6 +14,7 @@ public:
 		LayerManager::Get().AddLayer(pge, "fg");
 		LayerManager::Get().AddLayer(pge, "bg");
 
+		window_size = pge->GetWindowSize() / pge->GetPixelSize();
 		state = std::make_unique<EditState>(pge);
 	}
 
@@ -22,4 +24,5 @@ public:
 	void DrawBackground() { state->DrawBackground(); }
 	
 	void StateUpdate();
+	void WindowUpdate();
 };

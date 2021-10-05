@@ -603,7 +603,7 @@ void Manifold::GetContactPoints() {
 }
 
 void Manifold::ApplyForces(float dt) {
-    if (points.size() == 0) return;
+    if (points.size() == 0 || a->mass + b->mass == 0.0f) return;
     
 
     auto VectorProduct = [](float a, const olc::vf2d& v) { return olc::vf2d(v.y * a, v.x * -a); };

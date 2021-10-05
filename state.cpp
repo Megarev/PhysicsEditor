@@ -484,6 +484,10 @@ void EditState::CopyPolygon(const olc::vf2d& pos) {
 }
 
 
+void EditState::OnWindowUpdate() {
+	layers["bg"].is_update = true;
+	layers["fg"].is_update = true;
+}
 
 PlayState::PlayState(olc::PixelGameEngine* pge)
 	: State(pge) {

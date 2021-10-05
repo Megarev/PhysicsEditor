@@ -36,9 +36,10 @@ void gui::Button::Draw(olc::PixelGameEngine* pge) {
 }
 
 void gui::Button::DrawSprite(olc::PixelGameEngine* pge) {
+	
 	Draw(pge);
 	//pge->DrawPartialSprite(position, icon_data.spritesheet_ptr, icon_data.source_pos, icon_data.source_size);
-	pge->DrawPartialDecal(position, size, icon_data.spritesheet_ptr, icon_data.source_pos, icon_data.source_size, color);
+	if (icon_data.spritesheet_ptr) pge->DrawPartialDecal(position, size, icon_data.spritesheet_ptr, icon_data.source_pos, icon_data.source_size, color);
 }
 
 
@@ -233,13 +234,14 @@ bool gui::ColorPicker::Input(olc::PixelGameEngine* pge) {
 }
 
 void gui::ColorPicker::Draw(olc::PixelGameEngine* pge) const {
+	if (!color_circle) return;
 	pge->SetPixelMode(olc::Pixel::MASK);
 	pge->DrawSprite(position, color_circle);
 	pge->SetPixelMode(olc::Pixel::NORMAL);
 }
 
 void gui::ColorPicker::ClearMemory() {
-	delete color_circle;
+	UtilityFunctions::SafeDeletePointer(color_circle);
 }
 
 gui::ColorPanel::ColorPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& filename) 

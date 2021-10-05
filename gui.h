@@ -2,6 +2,16 @@
 #include "olcPixelGameEngine.h"
 #include <unordered_map>
 
+
+class UtilityFunctions {
+public:
+	template <typename T>
+	static void SafeDeletePointer(T*& ptr) {
+		delete ptr;
+		ptr = nullptr;
+	}
+};
+
 namespace gui {
 	class BoxUIBase {
 	public:

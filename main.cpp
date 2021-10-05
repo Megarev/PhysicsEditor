@@ -21,6 +21,9 @@ public:
 
 	bool OnUserUpdate(float dt) override {
 
+		// Window Update
+		editor.WindowUpdate();
+
 		// State Machine
 		editor.StateUpdate();
 

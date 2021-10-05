@@ -37,3 +37,13 @@ void Editor::StateUpdate() {
 		state->is_state_change = false;
 	}
 }
+
+void Editor::WindowUpdate() {
+	const olc::vi2d& new_size = pge->GetWindowSize() / pge->GetPixelSize();
+	if (window_size != new_size) {
+		window_size = new_size;
+		pge->SetScreenSize(window_size.x, window_size.y);
+		
+		state->OnWindowUpdate();
+	}
+}

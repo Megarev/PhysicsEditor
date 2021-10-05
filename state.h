@@ -50,6 +50,7 @@ public:
 	}
 
 	virtual void Initialize() {}
+	virtual void OnWindowUpdate() {}
 
 	virtual void Input() = 0;
 	virtual void Update() = 0;
@@ -115,6 +116,8 @@ private: // GUI
 	void ListBoxFunctions();
 
 	PolygonShape* add_polygon = nullptr;
+	
+	void OnWindowUpdate() override;
 
 	void IsRenderGUI(bool state);
 public:
