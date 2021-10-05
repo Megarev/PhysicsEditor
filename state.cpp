@@ -450,9 +450,14 @@ void EditState::OnMouseReleaseEdit() {
 void EditState::OnMousePressAdd(const olc::vf2d& world_m_pos) {
 	polygons.push_back(PolygonShape{ add_polygon->n_vertices, add_polygon->scale, add_polygon->position, add_polygon->color, add_polygon->id });
 	for (size_t i = 0; i < add_polygon->n_vertices; i++) polygons.back().GetVertex(i) = add_polygon->GetVertex(i);
+	
+	layers["fg"].is_update = true;
 	polygons.back().Update(true);
+	
 	delete add_polygon;
 	add_polygon = nullptr;
+
+	poly_panel.is_pressed = false;
 }
 
 void EditState::RemovePolygon() {

@@ -115,6 +115,7 @@ namespace gui {
 	class ColorPicker {
 	public:
 		olc::Sprite* color_circle = nullptr;
+		olc::Renderable saturation_circle;
 		olc::vi2d position;
 		float radius = 0.0f;
 		olc::Pixel selected_color = olc::WHITE;

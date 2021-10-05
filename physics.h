@@ -525,7 +525,7 @@ void Manifold::SetState() {
     
     size_t n_contacts = points.size();
     
-    float polygon_threshold = 0.1f;
+    float polygon_threshold = 0.001f;
 
     // First polygon, A
     if (a->n_iter++ > a->n_iter_update) {
