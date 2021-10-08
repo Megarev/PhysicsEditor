@@ -535,7 +535,7 @@ void Manifold::SetState() {
         if ((a->GetPosition() - a->GetPrevPosition()).mag2() <= polygon_threshold) {
             is_linear_move = false;
             a->SetVelocity(a->GetVelocity() * 0.9f);
-            if (a->GetVelocity().mag2() <= EPSILON) a->SetVelocity({ 0.0f, 0.0f });
+            if (a->GetVelocity().mag2() <= EPSILON * EPSILON) a->SetVelocity({ 0.0f, 0.0f });
         }
 
         bool is_rotational_move = true;
@@ -560,7 +560,7 @@ void Manifold::SetState() {
         if ((b->GetPosition() - b->GetPrevPosition()).mag2() <= polygon_threshold) {
             is_linear_move = false;
             b->SetVelocity(b->GetVelocity() * 0.9f);
-            if (b->GetVelocity().mag2() <= EPSILON) b->SetVelocity({ 0.0f, 0.0f });
+            if (b->GetVelocity().mag2() <= EPSILON * EPSILON) b->SetVelocity({ 0.0f, 0.0f });
         }
 
         bool is_rotational_move = true;
