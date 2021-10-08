@@ -20,7 +20,7 @@ public:
     float sf = 0.8f, df = 0.4f; // Coefficient of static friction and dynamic friction
     float len = 0.0f;
     bool is_move = true;
-    int n_iter = 0, n_iter_update = 10;
+    int n_iter = 0, n_iter_update = 100;
     bool is_collide = false;
     float angle = 0.0f, prev_angle = 0.0f;
 
@@ -525,7 +525,7 @@ void Manifold::SetState() {
     
     size_t n_contacts = points.size();
     
-    float polygon_threshold = 0.001f;
+    float polygon_threshold = 0.1f;
 
     // First polygon, A
     if (a->n_iter++ > a->n_iter_update) {
@@ -668,7 +668,7 @@ void Manifold::PositionalCorrection() {
 
     if (a->mass + b->mass == 0.0f) return;
 
-    float p = 0.5f;
+    float p = 0.25f;
     const olc::vf2d& direction = std::fmaxf(overlap - 0.05f, 0.0f) * normal * p / (a->mass + b->mass);
 
     a->Move(-direction * a->mass);
@@ -733,9 +733,9 @@ void Constraint::Update(RigidBody& rb, float dt) {
     
     if (offset > 0.0f) {
         float dl = offset / n;
-        for (int i = 0; i < segments.size(); i++) {
+        for (int i = 0; i < (int)segments.size(); i++) {
             segments[i].len = segments[i].len0 + dl;
-            if (i < segments.size() - 1) segments[i].angle = segments.back().angle;
+            if (i < (int)segments.size() - 1) segments[i].angle = segments.back().angle;
         }
     }
 
@@ -744,7 +744,7 @@ void Constraint::Update(RigidBody& rb, float dt) {
     for (int i = segments.size() - 2; i >= 0; i--) segments[i].PointTo(segments[i + 1].a);
 
     segments[0].a = pivot_pos; segments[0].Logic();
-    for (int i = 1; i < segments.size(); i++) {
+    for (int i = 1; i < (int)segments.size(); i++) {
         segments[i].a = segments[i - 1].b;
         segments[i].Logic();
     }

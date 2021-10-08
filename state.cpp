@@ -256,23 +256,31 @@ void EditState::Draw() {
 		break;
 	}
 
+	auto DrawString = [&](const std::string& text, const olc::Pixel& color) -> void {
+		pge->DrawStringDecal({ (float)m_pos.x, (float)m_pos.y + 8 }, text, color);
+	};
 
 	// GUI
 	button_panel.DrawSprite(pge);
 	if (button_panel("Play")->IsPointInBounds(m_pos)) {
-		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
+		DrawString("Play", olc::DARK_GREEN);
+		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
 	}
 	if (button_panel("ToggleGrid")->IsPointInBounds(m_pos)) {
-		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
+		DrawString("Toggle Grid", olc::DARK_YELLOW);
+		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
 	}
 	else if (button_panel("ToggleDrawMode")->IsPointInBounds(m_pos)) {
-		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle DrawMode", olc::CYAN);
+		DrawString("Toggle DrawMode", olc::DARK_CYAN);
+		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle DrawMode", olc::CYAN);
 	}
 	else if (button_panel("ToggleSnapToGrid")->IsPointInBounds(m_pos)) {
-		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Snap to Grid", olc::MAGENTA);
+		DrawString("Toggle SnapToGrid", olc::MAGENTA);
+		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Snap to Grid", olc::MAGENTA);
 	}
 	else if (button_panel("ToggleMassMode")->IsPointInBounds(m_pos)) {
-		pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
+		DrawString("Toggle MassMode", olc::WHITE);
+		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 	}
 
 	box_panel.Draw(pge);
@@ -449,7 +457,7 @@ void EditState::OnMouseReleaseEdit() {
 
 void EditState::OnMousePressAdd(const olc::vf2d& world_m_pos) {
 	polygons.push_back(PolygonShape{ add_polygon->n_vertices, add_polygon->scale, add_polygon->position, add_polygon->color, add_polygon->id });
-	for (size_t i = 0; i < add_polygon->n_vertices; i++) polygons.back().GetVertex(i) = add_polygon->GetVertex(i);
+	for (size_t i = 0; i < (size_t)add_polygon->n_vertices; i++) polygons.back().GetVertex(i) = add_polygon->GetVertex(i);
 	
 	layers["fg"].is_update = true;
 	polygons.back().Update(true);
@@ -539,7 +547,7 @@ void PlayState::Update() {
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 
 	int n_iter = 5;
-	for (int i = 0; i < n_iter; i++) scene.Update(pge->GetElapsedTime());
+	for (int i = 0; i < n_iter; i++) scene.Update(pge->GetElapsedTime() / (0.8f * n_iter));
 	if (pge->GetMouse(2).bHeld) {
 		offset += -(m_pos - prev_m_pos);
 	}

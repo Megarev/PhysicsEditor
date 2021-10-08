@@ -12,7 +12,7 @@ gui::Button::Button(const olc::vi2d& _position, const olc::vi2d& _size, const ol
 
 bool gui::Button::Input(olc::PixelGameEngine* pge) {
 
-	const olc::vf2d& m_pos = pge->GetMousePos() * 1.0f;
+	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 
 	color = init_color * 0.25f;
 	if (is_toggle_state && is_button_toggleable) color = init_color * 0.1f;

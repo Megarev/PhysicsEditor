@@ -73,7 +73,7 @@ private: // Main editor
 
 	olc::vf2d ToWorld(const olc::vf2d& point) const { return point + offset; }
 	olc::vf2d ToScreen(const olc::vf2d& point) const { return point - offset; }
-	olc::vi2d ToGrid(const olc::vf2d& point) const { return olc::vi2d(point / unit_size) * unit_size; }
+	olc::vi2d ToGrid(const olc::vf2d& point) const { return olc::vi2d(point / (int)unit_size) * (int)unit_size; }
 
 	void PanLevel(const olc::vf2d& m_pos);
 private: // Editing functions
