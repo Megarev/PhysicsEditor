@@ -35,6 +35,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	button_panel.AddButton("ToggleDrawMode", olc::CYAN, false, { 2 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleSnapToGrid", olc::YELLOW, true, { 3 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleMassMode", olc::WHITE, true, { 4 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("ClearLevel", olc::RED, false, { 5 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 
 	const olc::vi2d& box_size = { 150, 16 }, panel_size = { 220, 100 };
 	box_panel = gui::DragBoxPanel({ 32, 32 }, panel_size, olc::DARK_YELLOW, "Properties");
@@ -282,6 +283,10 @@ void EditState::Draw() {
 		DrawString("Toggle MassMode", olc::WHITE);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 	}
+	else if (button_panel("ClearLevel")->IsPointInBounds(m_pos)) {
+		DrawString("Clear Level", olc::DARK_RED);
+		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
+	}
 
 	box_panel.Draw(pge);
 	color_panel.Draw(pge);
@@ -331,6 +336,13 @@ void EditState::ButtonFunctions() {
 	}
 	else if (button_panel("ToggleMassMode")->is_pressed) {
 		is_mass_mode = !is_mass_mode;
+	}
+	else if (button_panel("ClearLevel")->is_pressed) {
+		offset = { 0.0f, 0.0f };
+		polygons.clear();
+		selected_shape = nullptr;
+		selected_vertex = nullptr;
+		IsRenderGUI(false);
 	}
 }
 
@@ -547,7 +559,8 @@ void PlayState::Update() {
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 
 	int n_iter = 5;
-	for (int i = 0; i < n_iter; i++) scene.Update(pge->GetElapsedTime() / (0.8f * n_iter));
+	float p = 0.2f;
+	for (int i = 0; i < n_iter; i++) scene.Update(pge->GetElapsedTime() / (p * n_iter));
 	if (pge->GetMouse(2).bHeld) {
 		offset += -(m_pos - prev_m_pos);
 	}
