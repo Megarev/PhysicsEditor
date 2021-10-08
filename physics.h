@@ -528,7 +528,7 @@ void Manifold::SetState() {
     float polygon_threshold = 0.1f;
 
     // First polygon, A
-    if (a->n_iter++ > a->n_iter_update) {
+    if (a->n_iter++ > a->n_iter_update && a->mass > 0.0f) {
         a->n_iter -= a->n_iter_update;
 
        bool is_linear_move = true;
@@ -553,7 +553,7 @@ void Manifold::SetState() {
     }
 
     // Second polygon, B
-    if (b->n_iter++ > b->n_iter_update) {
+    if (b->n_iter++ > b->n_iter_update && b->mass > 0.0f) {
         b->n_iter -= b->n_iter_update;
 
         bool is_linear_move = true;

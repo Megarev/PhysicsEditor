@@ -150,13 +150,15 @@ bool gui::DragBoxPanel::IsPointInBounds(const olc::vf2d& point) const {
 }
 
 bool gui::DragBoxPanel::Input(olc::PixelGameEngine* pge) {
+
+	if (!is_render) return false;
+
 	for (auto& box : drag_boxes) box.second.Input(pge);
 	const olc::vi2d& m_pos = pge->GetMousePos();
 
 	if (pge->GetMouse(0).bPressed) {
 		if (IsPointInBounds((olc::vf2d)m_pos)) {
 			is_pressed = true;
-			is_render = true;
 		}
 	}
 
@@ -251,6 +253,8 @@ gui::ColorPanel::ColorPanel(const olc::vi2d& _position, const olc::vi2d& _size, 
 }
 
 bool gui::ColorPanel::Input(olc::PixelGameEngine* pge) {
+
+	if (!is_render) return false;
 
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 	bool is_pos_in_bounds = false;
