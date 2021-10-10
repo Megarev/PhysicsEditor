@@ -10,10 +10,14 @@ void Editor::StateUpdate() {
 			const std::vector<PolygonShape> polygons = play_state->polygons;
 			const olc::vf2d offset = play_state->offset;
 			const bool is_polygon_fill = play_state->is_polygon_fill;
+			
+			const ConstraintManager mgr = play_state->constraint_mgr;
+
 			state = std::make_unique<EditState>(pge);
 			state->is_polygon_fill = is_polygon_fill;
 			state->polygons = polygons;
 			state->offset = offset;
+			state->constraint_mgr = std::move(mgr);
 		}
 		break;
 		case State::States::PLAY: {
@@ -24,10 +28,13 @@ void Editor::StateUpdate() {
 			const bool is_polygon_fill = edit_state->is_polygon_fill;
 			//std::cout << "PolygonData: " << offset << " " << polygons.size() << std::endl;
 
+			const ConstraintManager mgr = edit_state->constraint_mgr;
+
 			state = std::make_unique<PlayState>(pge);
 			state->offset = offset;
 			state->polygons = polygons;
 			state->is_polygon_fill = is_polygon_fill;
+			state->constraint_mgr = std::move(mgr);
 			state->Initialize();
 		}
 		break;

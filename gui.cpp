@@ -349,3 +349,17 @@ gui::Button* gui::ListBox::operator()(const std::string& name)
 
 	return nullptr;
 }
+
+gui::TexturePanel::TexturePanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, olc::Decal* _textures)
+	: BoxUIBase(_position, _size, _color), textures(_textures) {}
+
+bool gui::TexturePanel::Input(olc::PixelGameEngine* pge)
+{
+	return false;
+}
+
+void gui::TexturePanel::Draw(olc::PixelGameEngine* pge)
+{
+}
+
+

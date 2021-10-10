@@ -8,12 +8,12 @@ void EditState::IsRenderGUI(bool state) {
 EditState::EditState(olc::PixelGameEngine* pge)
 	: State(pge) {
 
-	level_size = { pge->ScreenWidth(), pge->ScreenHeight() };
+	unit_size = 32;
+	level_size = { (int)(pge->ScreenWidth() / unit_size) * (int)unit_size, (int)(pge->ScreenHeight() / unit_size) * (int)unit_size };
 
 	//polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, (olc::vf2d)level_size / 2.0f, olc::WHITE, id_count++ });
 	edit_feature = EditFeature::NONE;
 
-	unit_size = 32;
 	icon_set.Load("images/iconset.png");
 
 	uint32_t fg_layer = LayerManager::Get().GetLayer("fg");
@@ -36,6 +36,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	button_panel.AddButton("ToggleSnapToGrid", olc::YELLOW, true, { 3 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleMassMode", olc::WHITE, true, { 4 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ClearLevel", olc::RED, false, { 5 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("AddConstraint", olc::WHITE, true, { 6 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 
 	const olc::vi2d& box_size = { 150, 16 }, panel_size = { 220, 100 };
 	box_panel = gui::DragBoxPanel({ 32, 32 }, panel_size, olc::DARK_YELLOW, "Properties");
@@ -85,9 +86,8 @@ void EditState::Scale(const olc::vf2d& m_pos) {
 void EditState::Rotate(const olc::vf2d& m_pos) {
 	const olc::vf2d& s = m_pos - prev_m_pos;
 	const olc::vf2d& r = prev_m_pos - ToScreen(selected_shape->position);
-	float d_theta_mag = std::sqrtf(s.mag2() / r.mag2());
 
-	selected_shape->angle += (d_theta_mag * r.mag() - s.cross(r)) / r.mag2();
+	selected_shape->angle += (s.mag() - s.cross(r)) / r.mag2();
 }
 
 void EditState::Translate(const olc::vf2d& m_pos) {
@@ -151,15 +151,36 @@ void EditState::Input() {
 	if (!add_polygon && pge->GetKey(olc::C).bHeld && pge->GetKey(olc::CTRL).bHeld) {
 		CopyPolygon(world_m_pos);
 	}
-	
-	// Editing functions
-	if (!add_polygon) {
-		OnMousePressEdit(world_m_pos);
-		if (pge->GetMouse(0).bHeld) { OnMouseHoldEdit(m_pos, world_m_pos); }
-		if (pge->GetMouse(0).bReleased) { OnMouseReleaseEdit(); }
-	}
 
-	if (pge->GetKey(olc::R).bReleased) { RemovePolygon(); }
+	if (is_add_constraints) {
+		if (!constraint_mgr.is_press) {
+			if (pge->GetMouse(0).bPressed) {
+				for (auto& poly : polygons) {
+					if (poly.IsPointInBounds(world_m_pos)) {
+						constraint_mgr.OnMousePress(&poly);
+						break;
+					}
+				}
+			}
+		}
+		else {
+			if (pge->GetMouse(0).bReleased) {
+				constraint_mgr.OnMouseRelease(pge);
+				layers["fg"].is_update = true;
+			}
+		}
+	}
+	else {
+
+		// Editing functions
+		if (!add_polygon) {
+			OnMousePressEdit(world_m_pos);
+			if (pge->GetMouse(0).bHeld) { OnMouseHoldEdit(m_pos, world_m_pos); }
+			if (pge->GetMouse(0).bReleased) { OnMouseReleaseEdit(); }
+		}
+
+		if (pge->GetKey(olc::R).bReleased) { RemovePolygon(); }
+	}
 
 	// Panning functions
 	if (pge->GetMouse(2).bHeld) { PanLevel(m_pos); }
@@ -232,10 +253,14 @@ void EditState::Draw() {
 			for (auto& v : selected_shape->GetVertices()) pge->FillCircle((olc::vi2d)ToScreen(v), 5, selected_shape->color * 0.8f);
 			if (selected_vertex) pge->FillCircle((olc::vi2d)ToScreen(*selected_vertex), 5, olc::MAGENTA);
 		}
+
+
 		layers["fg"].is_update = false;
 		pge->SetDrawTarget(nullptr);
 	}
 
+	constraint_mgr.Draw(pge);
+	
 	const olc::vi2d& m_pos = pge->GetMousePos();
 
 	switch (edit_feature) {
@@ -264,15 +289,15 @@ void EditState::Draw() {
 	// GUI
 	button_panel.DrawSprite(pge);
 	if (button_panel("Play")->IsPointInBounds(m_pos)) {
-		DrawString("Play", olc::DARK_GREEN);
+		DrawString("Play", olc::GREEN);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
 	}
 	if (button_panel("ToggleGrid")->IsPointInBounds(m_pos)) {
-		DrawString("Toggle Grid", olc::DARK_YELLOW);
+		DrawString("Toggle Grid", olc::YELLOW);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
 	}
 	else if (button_panel("ToggleDrawMode")->IsPointInBounds(m_pos)) {
-		DrawString("Toggle DrawMode", olc::DARK_CYAN);
+		DrawString("Toggle DrawMode", olc::CYAN);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle DrawMode", olc::CYAN);
 	}
 	else if (button_panel("ToggleSnapToGrid")->IsPointInBounds(m_pos)) {
@@ -310,6 +335,7 @@ void EditState::ButtonFunctions() {
 		color_panel.Clear();
 		box_panel.Clear();
 		button_panel.Clear();
+		is_mass_mode = false;
 
 		//for (auto& poly : polygons) poly.color = poly.init_color;
 
@@ -343,6 +369,9 @@ void EditState::ButtonFunctions() {
 		selected_shape = nullptr;
 		selected_vertex = nullptr;
 		IsRenderGUI(false);
+	}
+	else if (button_panel("AddConstraint")->is_pressed) {
+		is_add_constraints = !is_add_constraints;
 	}
 }
 
@@ -390,36 +419,44 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 	};
 
 	for (auto& poly : polygons) {
-		const PolygonShape& test_poly_s = ScalePolygon(-0.2f, poly);
-		const PolygonShape& test_poly_r = ScalePolygon(+0.2f, poly);
+		if (poly.IsPointInBounds(world_m_pos) && pge->GetMouse(0).bPressed) {
+			selected_shape = &poly;
 
-		const bool& is_point_in_bounds = poly.IsPointInBounds(world_m_pos);
-		uint8_t is_point_translate = (uint8_t)test_poly_s.IsPointInBounds(world_m_pos);
-		uint8_t is_point_scale = (uint8_t)((!is_point_translate) & is_point_in_bounds);
-		uint8_t is_point_rotate = (uint8_t)(test_poly_r.IsPointInBounds(world_m_pos));
+			selected_vertex = nullptr;
+			press_m_pos = world_m_pos;
 
-		uint8_t flags = is_point_translate << 0 | is_point_scale << 1 | is_point_rotate << 2;
+			box_panel("Mass")->value = selected_shape->properties.mass;
+			box_panel("e")->value = selected_shape->properties.e;
+			box_panel("sf")->value = selected_shape->properties.sf;
+			box_panel("df")->value = selected_shape->properties.df;
+			box_panel("w")->value = selected_shape->properties.angular_velocity;
 
-		if (!is_feature) {
+			color_panel.color_picker.selected_color = selected_shape->color;
+
+			box_panel.is_render = true;
+			color_panel.is_render = true;
+
+			break;
+		}
+	}
+
+	if (!is_feature) {
+		if (selected_shape) {
+			const PolygonShape& test_poly_s = ScalePolygon(-0.2f, *selected_shape);
+			const PolygonShape& test_poly_r = ScalePolygon(+0.2f, *selected_shape);
+
+			const bool& is_point_in_bounds = selected_shape->IsPointInBounds(world_m_pos);
+			uint8_t is_point_translate = (uint8_t)test_poly_s.IsPointInBounds(world_m_pos);
+			uint8_t is_point_scale = (uint8_t)((!is_point_translate) & is_point_in_bounds);
+			uint8_t is_point_rotate = (uint8_t)(test_poly_r.IsPointInBounds(world_m_pos));
+
+			uint8_t flags = is_point_translate << 0 | is_point_scale << 1 | is_point_rotate << 2;
+
 			if (flags) {
 				is_bounds = true;
-				if (pge->GetMouse(0).bPressed) {
-					selected_shape = &poly;
-					selected_vertex = nullptr;
-					press_m_pos = world_m_pos;
+				
+				if (pge->GetMouse(0).bHeld) is_feature = true;
 
-					box_panel("Mass")->value = selected_shape->properties.mass;
-					box_panel("e")->value = selected_shape->properties.e;
-					box_panel("sf")->value = selected_shape->properties.sf;
-					box_panel("df")->value = selected_shape->properties.df;
-					box_panel("w")->value = selected_shape->properties.angular_velocity;
-
-					color_panel.color_picker.selected_color = selected_shape->color;
-
-					box_panel.is_render = true;
-					color_panel.is_render = true;
-					is_feature = true;
-				}
 				if (flags & 1) edit_feature = EditFeature::TRANSLATE;
 				else if (flags & 2) edit_feature = EditFeature::SCALE;
 				else if (flags & 4) edit_feature = EditFeature::ROTATE;
@@ -431,13 +468,12 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 						edit_feature = EditFeature::VERTEX;
 					}
 				}
-				break;
 			}
 			else { edit_feature = EditFeature::NONE; }
 		}
-	}
-	if (!is_bounds && pge->GetMouse(0).bPressed) {
-		selected_shape = nullptr;
+		if (!is_bounds && pge->GetMouse(0).bPressed) {
+			selected_shape = nullptr;
+		}
 	}
 }
 
@@ -527,27 +563,31 @@ PlayState::PlayState(olc::PixelGameEngine* pge)
 	edit_button.icon_data.source_size = button_size;
 
 	scene.Initialize(olc::vf2d{ (float)pge->ScreenWidth(), (float)pge->ScreenHeight() });
-
 }
 
 void PlayState::Initialize() {
+
+	std::unordered_map<int, int> polygon_id;
+
 	for (auto& p : polygons) {
 		RigidBody rb(p.position, p.GetVertices(), p.angle, p.properties.angular_velocity, p.properties.mass, p.properties.e, p.properties.sf, p.properties.df, p.id);
 		//RigidBody rb(p.position, p.n_vertices, p.scale.mag(), p.angle, 0.1f, p.properties.mass, p.properties.e, p.properties.sf, p.properties.df, p.id);
 		rb.SetColor(p.color);
 		scene.AddShape(rb);
 		//rb_list.push_back(rb);
+	
+		polygon_id.insert({ p.id, scene.GetShapes().back().GetID() });
+	}
+
+	for (auto& data : constraint_mgr.constraints_data) {
+		Constraint c(data.second, 100.0f, 0.5f, 0.2f, 5);
+		c.Attach(polygon_id[data.first]);
+		scene.AddConstraint(c);
 	}
 }
 
 void PlayState::Input() {
 	edit_button.Input(pge);
-	
-	if (pge->GetMouse(0).bPressed) {
-		RigidBody rb((olc::vf2d)pge->GetMousePos() + offset, 3 + rand() % 2, 10.0f, 0.0f, 1.0f, 0.1f, 0.8f, 0.4f, 0);
-		rb.SetColor(olc::WHITE);
-		scene.AddShape(rb);
-	}
 }
 
 void PlayState::Update() {
