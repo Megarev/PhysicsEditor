@@ -171,7 +171,7 @@ void EditState::Input() {
 		}
 		else {
 			if (pge->GetMouse(0).bReleased) {
-				constraint_mgr.OnMouseRelease(pge);
+				constraint_mgr.OnMouseRelease(world_m_pos);
 				layers["fg"].is_update = true;
 			}
 		}
@@ -260,13 +260,13 @@ void EditState::Draw() {
 			if (selected_vertex) pge->FillCircle((olc::vi2d)ToScreen(*selected_vertex), 5, olc::MAGENTA);
 		}
 
-		constraint_mgr.DrawConstraints(pge);
+		constraint_mgr.DrawConstraints(pge, offset);
 
 		layers["fg"].is_update = false;
 		pge->SetDrawTarget(nullptr);
 	}
 
-	constraint_mgr.Draw(pge);
+	constraint_mgr.Draw(pge, offset);
 	
 	const olc::vi2d& m_pos = pge->GetMousePos();
 
@@ -433,7 +433,6 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 			selected_shape = &poly;
 
 			selected_vertex = nullptr;
-			press_m_pos = world_m_pos;
 
 			box_panel("Mass")->value = selected_shape->properties.mass;
 			box_panel("e")->value = selected_shape->properties.e;
@@ -465,7 +464,10 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 			if (flags) {
 				is_bounds = true;
 				
-				if (pge->GetMouse(0).bHeld) is_feature = true;
+				if (pge->GetMouse(0).bHeld) {
+					is_feature = true;
+					press_m_pos = world_m_pos;
+				}
 
 				if (flags & 1) edit_feature = EditFeature::TRANSLATE;
 				else if (flags & 2) edit_feature = EditFeature::SCALE;

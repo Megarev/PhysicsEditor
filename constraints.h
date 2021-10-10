@@ -9,8 +9,8 @@ public:
 	PolygonShape* poly = nullptr;
 
 	void OnMousePress(PolygonShape* _poly);
-	void OnMouseRelease(olc::PixelGameEngine* pge);
+	void OnMouseRelease(const olc::vf2d& world_m_pos);
 
-	void Draw(olc::PixelGameEngine* pge);
-	void DrawConstraints(olc::PixelGameEngine* pge);
+	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset);
+	void DrawConstraints(olc::PixelGameEngine* pge, const olc::vf2d& offset);
 };
