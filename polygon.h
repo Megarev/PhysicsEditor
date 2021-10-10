@@ -14,9 +14,9 @@ static void DrawArrow(olc::PixelGameEngine* pge, const olc::vf2d& point, const o
 }
 
 struct PhysicsData {
-	float mass = 0.0f;
-	float e = 0.0f; // Coefficient of restitution
-	float sf = 0.0f, df = 0.0f; // Static and dynamic friction
+	float mass = 1.0f;
+	float e = 0.2f; // Coefficient of restitution
+	float sf = 0.5f, df = 0.3f; // Static and dynamic friction
 	float angular_velocity = 0.0f;
 };
 

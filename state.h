@@ -3,6 +3,7 @@
 #include "polygon.h"
 #include "gui.h"
 #include "physics.h"
+#include "constraints.h"
 
 class LayerManager {
 private:
@@ -30,6 +31,7 @@ protected:
 	const float PI = 3.1415926f;
 public:
 	std::vector<PolygonShape> polygons;
+	ConstraintManager constraint_mgr;
 public:
 	olc::vf2d offset; // Panning
 	bool is_polygon_fill = false;
@@ -61,8 +63,9 @@ public:
 class EditState : public State {
 private: // Main editor
 	bool is_update_render = false;
-	bool is_snap_to_grid = true;
+	bool is_snap_to_grid = false;
 	bool is_mass_mode = false;
+	bool is_add_constraints = false;
 	float mass_m = 100.0f;
 
 	//olc::vf2d offset; // Panning
