@@ -2,7 +2,6 @@
 #include "olcPixelGameEngine.h"
 #include <unordered_map>
 
-
 class UtilityFunctions {
 public:
 	template <typename T>
@@ -162,5 +161,16 @@ namespace gui {
 		void Draw(olc::PixelGameEngine* pge) override;
 
 		Button* operator()(const std::string& name);
+	};
+	
+	class TexturePanel : public BoxUIBase {
+	private:
+		olc::Decal* textures = nullptr;
+	public:
+		TexturePanel() {}
+		TexturePanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, olc::Decal* _textures);
+
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
 	};
 };
