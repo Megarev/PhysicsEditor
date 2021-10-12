@@ -26,7 +26,6 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	pge->EnableLayer(bg_layer, true);
 	layers.insert({ "bg", { bg_layer, true, true } });
 
-
 	// GUI
 	const olc::vi2d& button_size = { 36, 36 };
 	button_panel = gui::ButtonPanel{ { 1, 1 }, { pge->ScreenWidth() - 2, 36 }, olc::WHITE };
@@ -52,10 +51,11 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	color_panel.is_render = false;
 
 	poly_panel = gui::ListBox{ { 0, 0 }, { 100, 100 }, olc::VERY_DARK_RED, 10 };
-	poly_panel.AddItem("Add Triangle", olc::CYAN);
-	poly_panel.AddItem("Add Square", olc::CYAN);
-	poly_panel.AddItem("Add Pentagon", olc::CYAN);
 	poly_panel.AddItem("Add Hexagon", olc::CYAN);
+	poly_panel.AddItem("Add Pentagon", olc::CYAN);
+	poly_panel.AddItem("Add Square", olc::CYAN);
+	poly_panel.AddItem("Add Triangle", olc::CYAN);
+	poly_panel.AddItem("Add PolyBall", olc::CYAN);
 }
 
 bool EditState::IsPointInLevel(const olc::vf2d& point) const {
@@ -102,7 +102,7 @@ void EditState::Translate(const olc::vf2d& m_pos) {
 
 	for (auto& c : constraint_mgr.constraints_data) {
 		if (c.first == selected_shape->id) {
-			c.second.first = selected_shape->position; // Change the first point of the line to the polygon's updated position
+			c.second.first += move_step;
 		}
 	}
 }
@@ -175,6 +175,8 @@ void EditState::Input() {
 				layers["fg"].is_update = true;
 			}
 		}
+
+		//if (pge->GetMouse(1).bHeld) RemoveConstraint();
 	}
 	else {
 
@@ -320,7 +322,7 @@ void EditState::Draw() {
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 	}
 	else if (button_panel("AddConstraint")->IsPointInBounds(m_pos)) {
-		DrawString("Add constraint", olc::BLUE);
+		DrawString("Contraints Mode", olc::BLUE);
 	}
 
 	box_panel.Draw(pge);
@@ -329,6 +331,10 @@ void EditState::Draw() {
 
 	// Adding functions
 	if (add_polygon) add_polygon->Draw(pge, offset, is_polygon_fill);
+}
+
+void EditState::Initialize() {
+	id_count = polygons.size();
 }
 
 void EditState::PanLevel(const olc::vf2d& m_pos) {
@@ -376,6 +382,8 @@ void EditState::ButtonFunctions() {
 	else if (button_panel("ClearLevel")->is_pressed) {
 		offset = { 0.0f, 0.0f };
 		polygons.clear();
+		constraint_mgr.ClearConstraints();
+
 		selected_shape = nullptr;
 		selected_vertex = nullptr;
 		IsRenderGUI(false);
@@ -412,6 +420,12 @@ void EditState::ListBoxFunctions() {
 	else if (poly_panel("Add Hexagon")->is_pressed) {
 		if (add_polygon) delete add_polygon;
 		add_polygon = new PolygonShape{ 6, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f, id_count++ };
+		add_polygon->Update(true);
+		poly_panel.is_render = false;
+	}
+	else if (poly_panel("Add PolyBall")->is_pressed) {
+		if (add_polygon) delete add_polygon;
+		add_polygon = new PolygonShape{ 10, { (float)unit_size, (float)unit_size }, m_pos, olc::WHITE * 0.8f, id_count++ };
 		add_polygon->Update(true);
 		poly_panel.is_render = false;
 	}
@@ -538,8 +552,41 @@ void EditState::RemovePolygon() {
 			IsRenderGUI(false);
 			layers["fg"].is_update = true;
 
+			auto& mgr_data = constraint_mgr.constraints_data;
+
+			for (int j = (int)mgr_data.size() - 1; j >= 0; j--) {
+				if (mgr_data[j].first == polygons[i].id) {
+					mgr_data.erase(mgr_data.begin() + j);
+				}
+			}
+
+			edit_feature = EditFeature::NONE;
+
 			polygons.erase(polygons.begin() + i);
 			break;
+		}
+	}
+}
+
+void EditState::RemoveConstraint() {
+
+	auto& mgr_data = constraint_mgr.constraints_data;
+
+	for (int i = (int)mgr_data.size() - 1; i >= 0; i--) {
+		const olc::vf2d& p1 = mgr_data[i].second.first;
+		const olc::vf2d& p2 = mgr_data[i].second.second;
+
+		const olc::vf2d& p3 = prev_m_pos;
+		const olc::vf2d& p4 = (olc::vf2d)pge->GetMousePos();
+
+		float d = (p1 - p2).cross(p3 - p4);
+		if (d) {
+			float t = (p1 - p3).cross(p3 - p4) / d;
+			float u = (p1 - p3).cross(p1 - p2) / d;
+
+			if (t >= 0.0f && t <= 1.0f && u >= 0.0f && u <= 1.0f) {
+				mgr_data.erase(mgr_data.begin() + i);
+			}
 		}
 	}
 }
@@ -592,8 +639,8 @@ void PlayState::Initialize() {
 	}
 
 	for (auto& data : constraint_mgr.constraints_data) {
-		float k = 0.5f, b = 0.2f;
-		Constraint c(data.second.second, (data.second.second - data.second.first).mag() * k, k, b, 5);
+		float k = 0.5f, b = 0.1f;
+		Constraint c(data.second.second, (data.second.second - data.second.first).mag(), k, b, 5);
 		c.Attach(polygon_id[data.first]);
 		scene.AddConstraint(c);
 	}

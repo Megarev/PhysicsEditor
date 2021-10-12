@@ -78,6 +78,7 @@ private: // Main editor
 	olc::vf2d ToScreen(const olc::vf2d& point) const { return point - offset; }
 	olc::vi2d ToGrid(const olc::vf2d& point) const { return olc::vi2d(point / (int)unit_size) * (int)unit_size; }
 
+	void Initialize() override;
 	void PanLevel(const olc::vf2d& m_pos);
 private: // Editing functions
 	uint32_t unit_size = 0;
@@ -91,6 +92,9 @@ private: // Editing functions
 
 	void OnMousePressAdd(const olc::vf2d& world_m_pos);
 	void RemovePolygon();
+
+	void RemoveConstraint();
+	std::pair<olc::vf2d, olc::vf2d> point_pair; // For remove constraint function
 
 	void CopyPolygon(const olc::vf2d& pos);
 
