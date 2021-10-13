@@ -13,7 +13,7 @@ PolygonShape::PolygonShape(int _n_vertices, const olc::vf2d& size, const olc::vf
 
 bool PolygonShape::IsPointInBounds(const olc::vf2d& point) const {
 	// Iterate over all triangles
-	for (size_t i = 0; i < vertices.size() - 2; i++) {
+	for (size_t i = 0; (int)i < (int)(vertices.size() - 2); i++) {
 		size_t j = (i + 1) % vertices.size();
 		size_t k = (i + 2) % vertices.size();
 

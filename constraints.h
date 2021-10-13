@@ -13,4 +13,27 @@ public:
 
 	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset);
 	void DrawConstraints(olc::PixelGameEngine* pge, const olc::vf2d& offset);
+
+	void ClearConstraints();
+};
+
+
+class JointPairManager {
+public:
+	struct DataPair {
+		std::pair<uint32_t, uint32_t> ids;
+		std::pair<olc::vf2d, olc::vf2d> positions;
+	};
+
+	bool is_press = false;
+	std::vector<DataPair> data;
+	PolygonShape* poly = nullptr;
+
+	void OnMousePress(PolygonShape* _polyA);
+	void OnMouseRelease(PolygonShape* _polyB);
+
+	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset);
+	void DrawJointPairs(olc::PixelGameEngine* pge, const olc::vf2d& offset);
+
+	void ClearJointPairs();
 };

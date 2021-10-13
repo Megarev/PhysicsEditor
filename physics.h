@@ -114,7 +114,7 @@ public:
 
     void Logic();
     void PointTo(const olc::vf2d& p);
-    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset) const;
+    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, const olc::Pixel& color) const;
 };
 
 class Constraint {
@@ -525,7 +525,7 @@ void Manifold::SetState() {
     
     size_t n_contacts = points.size();
     
-    float polygon_threshold = 0.1f;
+    float polygon_threshold = 0.0001f;
 
     // First polygon, A
     if (a->n_iter++ > a->n_iter_update && a->mass > 0.0f) {
@@ -534,14 +534,14 @@ void Manifold::SetState() {
        bool is_linear_move = true;
         if ((a->GetPosition() - a->GetPrevPosition()).mag2() <= polygon_threshold) {
             is_linear_move = false;
-            a->SetVelocity(a->GetVelocity() * 0.9f);
-            if (a->GetVelocity().mag2() <= EPSILON * EPSILON) a->SetVelocity({ 0.0f, 0.0f });
+            //a->SetVelocity(a->GetVelocity() * 0.9f);
+            if (a->GetVelocity().mag2() <= EPSILON) a->SetVelocity({ 0.0f, 0.0f });
         }
 
         bool is_rotational_move = true;
         if (std::fabsf(a->angle - a->prev_angle) <= polygon_threshold) {
             is_rotational_move = false;
-            a->angular_velocity *= 0.9f;
+            //a->angular_velocity *= 0.9f;
             if (std::fabsf(a->angular_velocity) <= EPSILON) a->angular_velocity = 0.0f;
         }
 
@@ -559,14 +559,14 @@ void Manifold::SetState() {
         bool is_linear_move = true;
         if ((b->GetPosition() - b->GetPrevPosition()).mag2() <= polygon_threshold) {
             is_linear_move = false;
-            b->SetVelocity(b->GetVelocity() * 0.9f);
-            if (b->GetVelocity().mag2() <= EPSILON * EPSILON) b->SetVelocity({ 0.0f, 0.0f });
+            //b->SetVelocity(b->GetVelocity() * 0.9f);
+            if (b->GetVelocity().mag2() <= EPSILON) b->SetVelocity({ 0.0f, 0.0f });
         }
 
         bool is_rotational_move = true;
         if (std::fabsf(b->angle - b->prev_angle) <= polygon_threshold) {
             is_rotational_move = false;
-            b->angular_velocity *= 0.9f;
+            //b->angular_velocity *= 0.9f;
             if (std::fabsf(b->angular_velocity) <= EPSILON) b->angular_velocity = 0.0f;
         }
 
@@ -642,7 +642,7 @@ void Manifold::ApplyForces(float dt) {
         olc::vf2d impulse = j * normal;
         a->ApplyImpulse(-impulse, ra);
         b->ApplyImpulse(impulse, rb);
-        if (points.size() < 2) return;
+        //if (points.size() < 2) return;
 
         va = VectorProduct(a->angular_velocity, ra);
         vb = VectorProduct(b->angular_velocity, rb);
@@ -696,8 +696,8 @@ void Segment::PointTo(const olc::vf2d& p) {
     a = p - len0 * olc::vf2d(cosf(angle), sinf(angle));
 }
 
-void Segment::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset) const {
-    pge->DrawLine(a - offset, b - offset);
+void Segment::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, const olc::Pixel& color) const {
+    pge->DrawLine(a - offset, b - offset, color);
 }
 
 Constraint::Constraint(const olc::vf2d& p, float _len, float _k, float _b, int _n, bool _is_sling) 
@@ -718,7 +718,8 @@ void Constraint::ApplyForces(RigidBody& rb, float dt, bool is_input) {
     const olc::vf2d& offset = (extension - len) * dir;
     const olc::vf2d& force = -k * offset - b * rb.GetVelocity();
 
-    float inv_mass = is_input ? 1.0f : rb.inv_mass;
+    //float inv_mass = is_input ? 1.0f : rb.inv_mass;
+    float inv_mass = 1.0f;
 
     if (!rb.is_input) rb.AddAcceleration(force * inv_mass);
 }
@@ -752,7 +753,7 @@ void Constraint::Update(RigidBody& rb, float dt) {
 
 
 void Constraint::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, olc::Pixel color) {
-    for (const auto& s : segments) s.Draw(pge, offset);
+    for (const auto& s : segments) s.Draw(pge, offset, color);
 }
 
 // JointPair
@@ -848,13 +849,7 @@ void Scene::Update(float dt, bool is_debug) {
             shapeID.push_back(rigid_pairs[i].GetID(1));
         }
         
-        for (auto& s : shapes) {
-            s.Logic(inv_FPS, 0.0f, is_debug);
-            
-            // If polygon is not in contact, then the polygon should be moving by gravity
-            if (!s.is_collide) s.is_move = true;
-            s.is_collide = false;
-        }
+
         
         for (int i = shapes.size() - 1; i >= 0; i--) {
             if (shapes[i].mass > 0.0f && is_gravity &&
@@ -880,6 +875,14 @@ void Scene::Update(float dt, bool is_debug) {
         }
 
         for (auto& m : manifolds) { m.Logic(inv_FPS, 5, is_debug); }
+
+        for (auto& s : shapes) {
+            s.Logic(inv_FPS, 0.0f, is_debug);
+
+            // If polygon is not in contact, then the polygon should be moving by gravity
+            if (!s.is_collide) s.is_move = true;
+            s.is_collide = false;
+        }
     }
 
     alpha = accumulator / inv_FPS;
@@ -890,8 +893,8 @@ void Scene::SetBounds(const olc::vf2d& bounds) {
 }
 
 void Scene::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill) {
-    for (auto& c : constraints) c.Draw(pge, offset);
-    for (auto& j : joint_pairs) j.Draw(pge, offset);
+    for (auto& c : constraints) c.Draw(pge, offset, olc::YELLOW);
+    for (auto& j : joint_pairs) j.Draw(pge, offset, olc::CYAN);
     for (auto& r : rigid_pairs) r.Draw(pge, offset);
     for (auto& s : shapes) s.Draw(pge, offset, is_fill, 0.0f);
 }

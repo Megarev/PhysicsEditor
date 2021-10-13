@@ -14,12 +14,12 @@ bool gui::Button::Input(olc::PixelGameEngine* pge) {
 
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 
-	color = init_color * 0.25f;
+	color = init_color * 0.5f;
 	if (is_toggle_state && is_button_toggleable) color = init_color * 0.1f;
 	is_pressed = false;
 	
 	if (IsPointInBounds(m_pos)) {
-		if (!is_toggle_state && !is_button_toggleable) color = init_color * 0.5f;
+		if (!is_toggle_state && !is_button_toggleable) color = init_color * 0.8f;
 		if (pge->GetMouse(0).bPressed) {
 			if (!is_toggle_state && !is_button_toggleable) color = init_color * 0.9f;
 			is_pressed = true;
@@ -237,6 +237,8 @@ bool gui::ColorPicker::Input(olc::PixelGameEngine* pge) {
 
 void gui::ColorPicker::Draw(olc::PixelGameEngine* pge) const {
 	if (!color_circle) return;
+	
+	pge->DrawCircle(position + olc::vi2d((int)radius, (int)radius), radius);
 	pge->SetPixelMode(olc::Pixel::MASK);
 	pge->DrawSprite(position, color_circle);
 	pge->SetPixelMode(olc::Pixel::NORMAL);
@@ -349,3 +351,17 @@ gui::Button* gui::ListBox::operator()(const std::string& name)
 
 	return nullptr;
 }
+
+gui::TexturePanel::TexturePanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, olc::Decal* _textures)
+	: BoxUIBase(_position, _size, _color), textures(_textures) {}
+
+bool gui::TexturePanel::Input(olc::PixelGameEngine* pge)
+{
+	return false;
+}
+
+void gui::TexturePanel::Draw(olc::PixelGameEngine* pge)
+{
+}
+
+
