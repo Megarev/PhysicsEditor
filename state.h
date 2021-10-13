@@ -32,6 +32,7 @@ protected:
 public:
 	std::vector<PolygonShape> polygons;
 	ConstraintManager constraint_mgr;
+	JointPairManager joint_mgr;
 public:
 	olc::vf2d offset; // Panning
 	bool is_polygon_fill = false;
@@ -66,6 +67,7 @@ private: // Main editor
 	bool is_snap_to_grid = false;
 	bool is_mass_mode = false;
 	bool is_add_constraints = false;
+	bool is_add_joint_pair = false;
 	float mass_m = 100.0f;
 
 	//olc::vf2d offset; // Panning

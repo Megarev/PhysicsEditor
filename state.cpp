@@ -35,7 +35,8 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	button_panel.AddButton("ToggleSnapToGrid", olc::YELLOW, true, { 3 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleMassMode", olc::WHITE, true, { 4 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ClearLevel", olc::RED, false, { 5 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
-	button_panel.AddButton("AddConstraint", olc::WHITE, true, { 6 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("AddConstraint", olc::YELLOW, true, { 6 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("AddJointPair", olc::CYAN, true, { 7 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 
 	const olc::vi2d& box_size = { 150, 16 }, panel_size = { 220, 100 };
 	box_panel = gui::DragBoxPanel({ 32, 32 }, panel_size, olc::DARK_YELLOW, "Properties");
@@ -104,6 +105,11 @@ void EditState::Translate(const olc::vf2d& m_pos) {
 		if (c.first == selected_shape->id) {
 			c.second.first += move_step;
 		}
+	}
+
+	for (auto& j : joint_mgr.data) {
+		if (j.ids.first == selected_shape->id) j.positions.first += move_step;
+		else if (j.ids.second == selected_shape->id) j.positions.second += move_step;
 	}
 }
 
@@ -177,6 +183,29 @@ void EditState::Input() {
 		}
 
 		//if (pge->GetMouse(1).bHeld) RemoveConstraint();
+	}
+	else if (is_add_joint_pair) {
+		if (!joint_mgr.is_press) {
+			if (pge->GetMouse(0).bPressed) {
+				for (auto& poly : polygons) {
+					if (poly.IsPointInBounds(world_m_pos)) {
+						joint_mgr.OnMousePress(&poly);
+						break;
+					}
+				}
+			}
+		}
+		else {
+			if (pge->GetMouse(0).bReleased) {
+				for (auto& poly : polygons) {
+					if (poly.IsPointInBounds(world_m_pos)) {
+						joint_mgr.OnMouseRelease(&poly);
+						layers["fg"].is_update = true;
+						break;
+					}
+				}
+			}
+		}
 	}
 	else {
 
@@ -263,12 +292,14 @@ void EditState::Draw() {
 		}
 
 		constraint_mgr.DrawConstraints(pge, offset);
+		joint_mgr.DrawJointPairs(pge, offset);
 
 		layers["fg"].is_update = false;
 		pge->SetDrawTarget(nullptr);
 	}
 
 	constraint_mgr.Draw(pge, offset);
+	joint_mgr.Draw(pge, offset);
 	
 	const olc::vi2d& m_pos = pge->GetMousePos();
 
@@ -318,11 +349,14 @@ void EditState::Draw() {
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 	}
 	else if (button_panel("ClearLevel")->IsPointInBounds(m_pos)) {
-		DrawString("Clear Level", olc::DARK_RED);
+		DrawString("Clear Level", olc::RED);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 	}
 	else if (button_panel("AddConstraint")->IsPointInBounds(m_pos)) {
-		DrawString("Contraints Mode", olc::BLUE);
+		DrawString("Contraints Mode", olc::WHITE);
+	}
+	else if (button_panel("AddJointPair")->IsPointInBounds(m_pos)) {
+		DrawString("PolygonPair mode", olc::YELLOW);
 	}
 
 	box_panel.Draw(pge);
@@ -390,6 +424,13 @@ void EditState::ButtonFunctions() {
 	}
 	else if (button_panel("AddConstraint")->is_pressed) {
 		is_add_constraints = !is_add_constraints;
+		button_panel("AddJointPair")->is_toggle_state = false;
+		is_add_joint_pair = false;
+	}
+	else if (button_panel("AddJointPair")->is_pressed) {
+		is_add_joint_pair = !is_add_joint_pair;
+		button_panel("AddConstraint")->is_toggle_state = false;
+		is_add_constraints = false;
 	}
 }
 
@@ -560,6 +601,12 @@ void EditState::RemovePolygon() {
 				}
 			}
 
+			for (int j = (int)joint_mgr.data.size() - 1; j >= 0; j--) {
+				if (joint_mgr.data[j].ids.first == polygons[i].id || joint_mgr.data[j].ids.second == polygons[i].id) {
+					joint_mgr.data.erase(joint_mgr.data.begin() + j);
+				}
+			}
+
 			edit_feature = EditFeature::NONE;
 
 			polygons.erase(polygons.begin() + i);
@@ -643,6 +690,13 @@ void PlayState::Initialize() {
 		Constraint c(data.second.second, (data.second.second - data.second.first).mag(), k, b, 5);
 		c.Attach(polygon_id[data.first]);
 		scene.AddConstraint(c);
+	}
+
+	for (auto& data : joint_mgr.data) {
+		float k = 0.5f, b = 0.1f;
+		JointPair j(std::make_pair(polygon_id[data.ids.first], polygon_id[data.ids.second]), 
+			(data.positions.second - data.positions.first).mag(), k, b, 5, false);
+		scene.AddJointPair(j);
 	}
 }
 
