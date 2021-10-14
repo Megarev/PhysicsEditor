@@ -32,6 +32,7 @@ protected:
 public:
 	std::vector<PolygonShape> polygons;
 	ConstraintManager constraint_mgr;
+	JointPairManager joint_mgr;
 public:
 	olc::vf2d offset; // Panning
 	bool is_polygon_fill = false;
@@ -65,7 +66,8 @@ private: // Main editor
 	bool is_update_render = false;
 	bool is_snap_to_grid = false;
 	bool is_mass_mode = false;
-	bool is_add_constraints = false;
+	//bool is_add_constraints = false;
+	//bool is_add_joint_pair = false;
 	float mass_m = 100.0f;
 
 	//olc::vf2d offset; // Panning
@@ -101,7 +103,8 @@ private: // Editing functions
 	bool is_feature = false; // Is edit feature being used
 	
 	enum class EditFeature { NONE = 0, TRANSLATE, SCALE, ROTATE, VERTEX } edit_feature;
-	void Scale(const olc::vf2d& m_pos);
+	enum class Mode { POLYGON, CONSTRAINTS, JOINTPAIR } mode;
+	//void Scale(const olc::vf2d& m_pos);
 	void Rotate(const olc::vf2d& m_pos);
 	void Translate(const olc::vf2d& m_pos);
 	void MoveVertex(const olc::vf2d& m_pos);
@@ -113,7 +116,7 @@ private: // Layers
 	std::unordered_map<std::string, LayerData> layers;
 private: // GUI
 	gui::ButtonPanel button_panel;
-	gui::DragBoxPanel box_panel;
+	gui::DragBoxPanel box_panel, constraints_panel;
 	gui::ColorPanel color_panel;
 	gui::ListBox poly_panel;
 
