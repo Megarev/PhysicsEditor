@@ -407,7 +407,9 @@ void EditState::Draw() {
 }
 
 void EditState::Initialize() {
-	id_count = polygons.size();
+	uint32_t id_pos = 0;
+	for (auto& poly : polygons) { id_pos = std::fmaxf(id_pos, poly.id); }
+	id_count = id_pos + 1;
 }
 
 void EditState::PanLevel(const olc::vf2d& m_pos) {
