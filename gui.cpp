@@ -371,4 +371,40 @@ void gui::TexturePanel::Draw(olc::PixelGameEngine* pge)
 {
 }
 
+gui::TextBox::TextBox(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& _text) 
+	: BoxUIBase(_position, _size, _color), text(_text) {}
 
+void gui::TextBox::SetBox(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& _text) {
+	position = _position;
+	size = _size;
+	color = _color;
+	text = _text;
+}
+
+bool gui::TextBox::Input(olc::PixelGameEngine* pge) {
+	return false;
+}
+
+void gui::TextBox::Draw(olc::PixelGameEngine* pge) {
+	if (!is_render) return;
+	pge->FillRect(position, size, color * 0.25f);
+	pge->DrawRect(position, size, olc::WHITE);
+	
+	int n = 0;
+	int y_offset = pge->GetTextSizeProp("").y;
+	std::istringstream iss(text);
+	std::string str, s;
+
+	while (iss >> s) { 
+		const std::string& new_str = str + s + " ";
+
+		if (pge->GetTextSizeProp(new_str).x > size.x) {
+			pge->DrawStringProp({ position.x, (n++ * y_offset) + position.y }, str, color);
+			str = s + " ";
+		}
+		else {
+			str = new_str;
+		}
+	}
+	pge->DrawStringProp({ position.x, (n * y_offset) + position.y }, str, color);
+}
