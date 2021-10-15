@@ -174,4 +174,21 @@ namespace gui {
 		bool Input(olc::PixelGameEngine* pge) override;
 		void Draw(olc::PixelGameEngine* pge) override;
 	};
+
+	class TextBox : public BoxUIBase {
+	private:
+		std::string text;
+	public:
+		bool is_render = false;
+		TextBox() {}
+		TextBox(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& _text);
+		/*void SetText(const std::string& _text) { text = _text; }
+		void SetPosition(const olc::vi2d& _position) { position = _position; }
+		void SetSize(const olc::vi2d& _size) { size = _size; }
+		void SetColor(const olc::Pixel& _color) { color = _color; }*/
+		void SetBox(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::string& _text);
+
+		bool Input(olc::PixelGameEngine* pge) override;
+		void Draw(olc::PixelGameEngine* pge) override;
+	};
 };

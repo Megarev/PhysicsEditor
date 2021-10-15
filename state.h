@@ -66,13 +66,12 @@ private: // Main editor
 	bool is_update_render = false;
 	bool is_snap_to_grid = false;
 	bool is_mass_mode = false;
-	//bool is_add_constraints = false;
-	//bool is_add_joint_pair = false;
 	float mass_m = 100.0f;
 
-	//olc::vf2d offset; // Panning
 	olc::vi2d level_size;
 	uint32_t id_count = 0;
+
+	gui::TextBox text_box;
 
 	bool IsPointInLevel(const olc::vf2d& point) const;
 

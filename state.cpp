@@ -67,6 +67,8 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	poly_panel.AddItem("Add Square", olc::YELLOW);
 	poly_panel.AddItem("Add Triangle", olc::YELLOW);
 	poly_panel.AddItem("Add PolyBall", olc::YELLOW);
+
+	text_box = gui::TextBox{};
 }
 
 bool EditState::IsPointInLevel(const olc::vf2d& point) const {
@@ -363,38 +365,55 @@ void EditState::Draw() {
 		pge->DrawStringDecal({ (float)m_pos.x, (float)m_pos.y + 8 }, text, color);
 	};
 
+	auto SetTextBox = [&](const std::string& text, const std::string& button_id, const olc::Pixel& color, const olc::vi2d& size = { 100, 20 }) -> void {
+		text_box.SetBox(button_panel(button_id)->position + olc::vi2d{ 0, button_panel(button_id)->size.y }, size, color, text);
+		text_box.is_render = true;
+	};
+
 	// GUI
 	button_panel.DrawSprite(pge);
+
+	text_box.is_render = false;
 	if (button_panel("Play")->IsPointInBounds(m_pos)) {
 		DrawString("Play", olc::GREEN);
+		SetTextBox("Play simulation", "Play", olc::GREEN);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
 	}
 	if (button_panel("ToggleGrid")->IsPointInBounds(m_pos)) {
 		DrawString("Toggle Grid", olc::YELLOW);
+		SetTextBox("Turn grid on/off", "ToggleGrid", olc::YELLOW);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
 	}
 	else if (button_panel("ToggleDrawMode")->IsPointInBounds(m_pos)) {
 		DrawString("Toggle DrawMode", olc::CYAN);
+		SetTextBox("Make polygons Outline/Filled", "ToggleDrawMode", olc::CYAN);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle DrawMode", olc::CYAN);
 	}
 	else if (button_panel("ToggleSnapToGrid")->IsPointInBounds(m_pos)) {
 		DrawString("Toggle SnapToGrid", olc::MAGENTA);
+		SetTextBox("Grid-based movement", "ToggleSnapToGrid", olc::MAGENTA);
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Snap to Grid", olc::MAGENTA);
 	}
 	else if (button_panel("ToggleMassMode")->IsPointInBounds(m_pos)) {
 		DrawString("Toggle MassMode", olc::WHITE);
+		SetTextBox("Brightness indicates the polygon's heaviness", "ToggleMassMode", olc::WHITE, { 100, 36 });
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 	}
 	else if (button_panel("ClearLevel")->IsPointInBounds(m_pos)) {
-		DrawString("Clear Level", olc::RED);
+		DrawString("Clear Scene", olc::RED);
+		SetTextBox("Clears the contents of the scene", "ClearLevel", olc::RED, { 100, 28 });
 		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 	}
 	else if (button_panel("AddConstraint")->IsPointInBounds(m_pos)) {
 		DrawString("Contraints Mode", olc::WHITE);
+		SetTextBox("Click and drag a polygon to make rope", "AddConstraint", olc::YELLOW, { 100, 28 });
 	}
 	else if (button_panel("AddJointPair")->IsPointInBounds(m_pos)) {
 		DrawString("PolygonPair mode", olc::YELLOW);
+		SetTextBox("Click and drag between two polygons to connect them", "AddJointPair", olc::CYAN, { 100, 36 });
 	}
+
+	text_box.Draw(pge);
 
 	box_panel.Draw(pge);
 	constraints_panel.Draw(pge);
@@ -428,7 +447,7 @@ void EditState::ButtonFunctions() {
 		button_panel.Clear();
 		is_mass_mode = false;
 
-		//for (auto& poly : polygons) poly.color = poly.init_color;
+		for (auto& poly : polygons) poly.color = poly.init_color;
 
 		for (auto& layer : layers) {
 			pge->EnableLayer(layer.second.id, false);
