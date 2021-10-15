@@ -725,12 +725,11 @@ void PlayState::Initialize() {
 
 	for (auto& p : polygons) {
 		RigidBody rb(p.position, p.GetVertices(), p.angle, p.properties.angular_velocity, p.properties.mass, p.properties.e, p.properties.sf, p.properties.df, p.id);
-		//RigidBody rb(p.position, p.n_vertices, p.scale.mag(), p.angle, 0.1f, p.properties.mass, p.properties.e, p.properties.sf, p.properties.df, p.id);
 		rb.SetColor(p.color);
-		scene.AddShape(rb);
-		//rb_list.push_back(rb);
+		
+		int id = scene.AddShape(rb);
 	
-		polygon_id.insert({ p.id, scene.GetShapes().back().GetID() });
+		polygon_id.insert({ p.id, id });
 	}
 
 	int n_rope_segments = 5;
