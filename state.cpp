@@ -364,8 +364,8 @@ void EditState::Draw() {
 		break;
 	}
 
-	auto DrawString = [&](const std::string& text, const olc::Pixel& color) -> void {
-		pge->DrawStringDecal({ (float)m_pos.x /* - pge->GetTextSize(text).x / 2.0f */, (float)m_pos.y + 15 }, text, color);
+	auto DrawString = [&](const std::string& text, const olc::Pixel& color, const olc::vi2d& offset = { 0, 0 }) -> void {
+		pge->DrawStringDecal({ (float)m_pos.x + offset.x /* - pge->GetTextSize(text).x / 2.0f */, (float)m_pos.y + offset.y + 15 }, text, color);
 	};
 
 	auto SetTextBox = [&](const std::string& text, const std::string& button_id, const olc::Pixel& color, const olc::vi2d& size = { 100, 20 }) -> void {
@@ -417,10 +417,10 @@ void EditState::Draw() {
 		SetTextBox("Click and drag between two polygons to connect them", "AddJointPair", olc::CYAN, { 100, 56 });
 	}
 	else if (clear_button.IsPointInBounds(m_pos)) {
-		DrawString("Clear Scene", olc::MAGENTA);
-		const std::string& text = "Clears the contents of the scene";
+		const std::string& text = "Clear Scene";
+		DrawString(text, olc::MAGENTA, { -(pge->GetTextSizeProp(text).x + 8), 0 });
 		text_box.SetBox(clear_button.position + olc::vi2d{ -clear_button.size.x * 2, clear_button.size.y + (int)unit_size / 2 }, { 105, 45 }, 
-			olc::Pixel(255, 193, 143), text); // Red violet color
+			olc::Pixel(255, 193, 143), "Clears the contents of the scene"); // Red violet color
 		text_box.is_render = true;
 		//SetTextBox("Clears the contents of the scene", "ClearLevel", olc::Pixel(255, 193, 143), { 105, 45 }); // Red violet color
 	}
