@@ -38,6 +38,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	//button_panel.AddButton("ClearLevel", olc::RED, false, { 5 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("AddConstraint", olc::YELLOW, true, { 6 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("AddJointPair", olc::CYAN, true, { 7 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("ShowHelpBox", olc::WHITE * 0.9f, false, { 8 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 
 	clear_button = gui::Button{ { pge->ScreenWidth() - button_size.x + 1, 1 }, button_size, olc::RED, false };
 	clear_button.icon_data = { { 5 * button_size.x, 0 }, button_size, icon_set.Decal() };
@@ -72,7 +73,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	poly_panel.AddItem("Add PolyBall", olc::YELLOW);
 
 	text_box = gui::TextBox{};
-	//help_box = gui::TextPanel{};
+	help_box = gui::TextPanel{};
 }
 
 bool EditState::IsPointInLevel(const olc::vf2d& point) const {
@@ -172,6 +173,9 @@ void EditState::Input() {
 	
 	// Adding functions
 	if (pge->GetMouse(0).bPressed && add_polygon) { OnMousePressAdd(world_m_pos); }
+
+	if (is_helper_box) return;
+
 	if (mode == Mode::POLYGON) {
 		is_gui_input |= poly_panel.Input(pge);
 		ListBoxFunctions();
@@ -180,7 +184,7 @@ void EditState::Input() {
 	if (is_gui_input && !add_polygon) return;
 
 
-	if (!add_polygon && pge->GetKey(olc::C).bHeld && pge->GetKey(olc::CTRL).bHeld) {
+	if (!add_polygon && pge->GetKey(olc::C).bHeld) {
 		if (selected_shape) CopyPolygon(selected_shape->position);
 	}
 
@@ -341,6 +345,19 @@ void EditState::Draw() {
 		pge->SetDrawTarget(nullptr);
 	}
 
+
+	help_box.is_render = false;
+	if (selected_shape) {
+		int y_offset = 32;
+		help_box.SetPanel({ 0, pge->ScreenHeight() - y_offset }, { pge->ScreenWidth() / 4, y_offset }, olc::WHITE, {
+			"C - Copy polygon",
+			"R - Remove polygon"
+		});
+		help_box.SetTitle("");
+
+		help_box.is_render = true;
+	}
+
 	constraint_mgr.Draw(pge, offset);
 	joint_mgr.Draw(pge, offset);
 	
@@ -379,51 +396,56 @@ void EditState::Draw() {
 	clear_button.DrawSprite(pge);
 
 	text_box.is_render = false;
-	if (button_panel("Play")->IsPointInBounds(m_pos)) {
-		DrawString("Play", olc::GREEN);
-		SetTextBox("Play simulation", "Play", olc::GREEN);
-		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
-	}
-	if (button_panel("ToggleGrid")->IsPointInBounds(m_pos)) {
-		DrawString("Toggle Grid", olc::MAGENTA);
-		SetTextBox("Turn grid on/off", "ToggleGrid", olc::Pixel(255, 192, 203), { 100, 32 }); // Pink color
-		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
-	}
-	else if (button_panel("ToggleDrawMode")->IsPointInBounds(m_pos)) {
-		DrawString("Toggle DrawMode", olc::YELLOW);
-		SetTextBox("Make polygons Outlined/Filled", "ToggleDrawMode", olc::YELLOW, { 105, 32 });
-		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle DrawMode", olc::CYAN);
-	}
-	else if (button_panel("ToggleSnapToGrid")->IsPointInBounds(m_pos)) {
-		DrawString("Toggle SnapToGrid", olc::CYAN);
-		SetTextBox("Grid-based movement", "ToggleSnapToGrid", olc::Pixel(135, 206, 236), { 100, 32 }); // Pink color
-		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Snap to Grid", olc::MAGENTA);
-	}
-	else if (button_panel("ToggleMassMode")->IsPointInBounds(m_pos)) {
-		DrawString("Toggle MassMode", olc::WHITE);
-		SetTextBox("Brightness indicates the polygon's heaviness", "ToggleMassMode", olc::WHITE, { 100, 56 });
-		//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
-	}
-	//else if (button_panel("ClearLevel")->IsPointInBounds(m_pos)) {
-	//	DrawString("Clear Scene", olc::RED);
-	//	SetTextBox("Clears the contents of the scene", "ClearLevel", olc::Pixel(255, 193, 143), { 105, 45 }); // Red violet color
-	//	//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
-	//}
-	else if (button_panel("AddConstraint")->IsPointInBounds(m_pos)) {
-		DrawString("Contraints Mode", olc::WHITE);
-		SetTextBox("Click and drag a polygon to make rope", "AddConstraint", olc::YELLOW, { 105, 45 });
-	}
-	else if (button_panel("AddJointPair")->IsPointInBounds(m_pos)) {
-		DrawString("PolygonPair mode", olc::YELLOW);
-		SetTextBox("Click and drag between two polygons to connect them", "AddJointPair", olc::CYAN, { 100, 56 });
-	}
-	else if (clear_button.IsPointInBounds(m_pos)) {
-		const std::string& text = "Clear Scene";
-		DrawString(text, olc::MAGENTA, { -(pge->GetTextSizeProp(text).x + 8), 0 });
-		text_box.SetBox(clear_button.position + olc::vi2d{ -clear_button.size.x * 2, clear_button.size.y + (int)unit_size / 2 }, { 105, 45 }, 
-			olc::Pixel(255, 193, 143), "Clears the contents of the scene"); // Red violet color
-		text_box.is_render = true;
-		//SetTextBox("Clears the contents of the scene", "ClearLevel", olc::Pixel(255, 193, 143), { 105, 45 }); // Red violet color
+	if (!is_helper_box) {
+		if (button_panel("Play")->IsPointInBounds(m_pos)) {
+			DrawString("Play", olc::GREEN);
+			SetTextBox("Play simulation", "Play", olc::GREEN);
+			//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Play", olc::GREEN);
+		}
+		if (button_panel("ToggleGrid")->IsPointInBounds(m_pos)) {
+			DrawString("Toggle Grid", olc::MAGENTA);
+			SetTextBox("Turn grid on/off", "ToggleGrid", olc::Pixel(255, 192, 203), { 100, 32 }); // Pink color
+			//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle Grid", olc::YELLOW);
+		}
+		else if (button_panel("ToggleDrawMode")->IsPointInBounds(m_pos)) {
+			DrawString("Toggle DrawMode", olc::YELLOW);
+			SetTextBox("Make polygons Outlined/Filled", "ToggleDrawMode", olc::YELLOW, { 105, 32 });
+			//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle DrawMode", olc::CYAN);
+		}
+		else if (button_panel("ToggleSnapToGrid")->IsPointInBounds(m_pos)) {
+			DrawString("Toggle SnapToGrid", olc::CYAN);
+			SetTextBox("Grid-based movement", "ToggleSnapToGrid", olc::Pixel(135, 206, 236), { 100, 32 }); // Pink color
+			//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Snap to Grid", olc::MAGENTA);
+		}
+		else if (button_panel("ToggleMassMode")->IsPointInBounds(m_pos)) {
+			DrawString("Toggle MassMode", olc::WHITE);
+			SetTextBox("Brightness indicates the polygon's heaviness", "ToggleMassMode", olc::WHITE, { 100, 56 });
+			//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
+		}
+		//else if (button_panel("ClearLevel")->IsPointInBounds(m_pos)) {
+		//	DrawString("Clear Scene", olc::RED);
+		//	SetTextBox("Clears the contents of the scene", "ClearLevel", olc::Pixel(255, 193, 143), { 105, 45 }); // Red violet color
+		//	//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
+		//}
+		else if (button_panel("AddConstraint")->IsPointInBounds(m_pos)) {
+			DrawString("Contraints Mode", olc::WHITE);
+			SetTextBox("Click and drag a polygon to make rope", "AddConstraint", olc::YELLOW, { 105, 45 });
+		}
+		else if (button_panel("AddJointPair")->IsPointInBounds(m_pos)) {
+			DrawString("PolygonPair mode", olc::YELLOW);
+			SetTextBox("Click and drag between two polygons to connect them", "AddJointPair", olc::CYAN, { 100, 56 });
+		}
+		else if (button_panel("ShowHelpBox")->IsPointInBounds(m_pos)) {
+			DrawString("Help", olc::WHITE);
+		}
+		else if (clear_button.IsPointInBounds(m_pos)) {
+			const std::string& text = "Clear Scene";
+			DrawString(text, olc::MAGENTA, { -(pge->GetTextSizeProp(text).x + 8), 0 });
+			text_box.SetBox(clear_button.position + olc::vi2d{ -clear_button.size.x * 2, clear_button.size.y + (int)unit_size / 2 }, { 105, 45 },
+				olc::Pixel(255, 193, 143), "Clears the contents of the scene"); // Red violet color
+			text_box.is_render = true;
+			//SetTextBox("Clears the contents of the scene", "ClearLevel", olc::Pixel(255, 193, 143), { 105, 45 }); // Red violet color
+		}
 	}
 
 	text_box.Draw(pge);
@@ -437,16 +459,20 @@ void EditState::Draw() {
 	// Adding functions
 	if (add_polygon) add_polygon->Draw(pge, offset, is_polygon_fill);
 
-	/*const olc::vi2d& offset = { 40, 40 };
-	help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, olc::YELLOW, {
-		"Right mouse button - Open up the polygons panel",
-		"Middle mouse button - To pan the scene",
-		"Press R to remove the selected polygon",
-		"Press Ctrl + C to copy a polygon"
-	}, 2);
-	help_box.SetTitle("Instructions");
+	//const olc::vi2d& offset = { 40, 40 };
+	//help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, olc::YELLOW, {
+	//	"Right mouse - Open up the polygons panel",
+	//	"Middle mouse - To pan the scene",
+	//	//"R - remove the selected polygon",
+	//	//"Ctrl + C - copy a polygon"
+	//}, 2);
+	//help_box.SetTitle("Instructions");
 
-	help_box.Draw(pge);*/
+	if (is_helper_box) {
+		SetHelpBox(0);
+		help_box.is_render = true;
+	}
+	help_box.Draw(pge);
 }
 
 void EditState::Initialize() {
@@ -463,6 +489,10 @@ void EditState::PanLevel(const olc::vf2d& m_pos) {
 
 void EditState::ButtonFunctions() {
 	if (!button_panel.buttons.size()) return;
+
+	if (button_panel("ShowHelpBox")->is_pressed) {
+		is_helper_box = !is_helper_box;
+	}
 
 	if (button_panel("Play")->is_pressed) {
 		ChangeState(States::PLAY);
@@ -519,7 +549,6 @@ void EditState::ButtonFunctions() {
 		mode = mode == Mode::JOINTPAIR ? Mode::POLYGON : Mode::JOINTPAIR;
 		constraints_panel.is_render = (mode == Mode::JOINTPAIR);
 		IsRenderGUI(false);
-		//is_add_joint_pair = !is_add_joint_pair;
 		button_panel("AddConstraint")->is_toggle_state = false;
 		//is_add_constraints = false;
 	}
@@ -749,6 +778,25 @@ void EditState::CopyPolygon(const olc::vf2d& pos) {
 		add_polygon->GetVertex(i) = selected_shape->GetVertex(i);
 	}
 	add_polygon->Update(true);
+}
+
+void EditState::SetHelpBox(int n_slide) {
+	switch (n_slide) {
+	case 0:
+		olc::vi2d offset = { 40, 40 };
+		
+		help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, olc::CYAN, {
+			"Mass: Heaviness of polygons",
+			"e: Restitution/bounciness",
+			"sf: Static friction",
+			"df: Dynamic friction",
+			"w: Angular velocity",
+			"k: Spring constant/stiffness (rope)",
+			"b: Damping constant/drag (rope)"
+		}, 2);
+		help_box.SetTitle("Physics Info");
+		break;
+	}
 }
 
 

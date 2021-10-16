@@ -198,7 +198,7 @@ namespace gui {
 		std::string title;
 	public:
 		int scale = 1;
-		bool is_render = false;
+		bool is_render = true;
 		TextPanel() {}
 		TextPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::vector<std::string>& _texts);
 		void SetPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::vector<std::string>& _texts, int _scale = 1);

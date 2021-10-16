@@ -66,6 +66,7 @@ private: // Main editor
 	bool is_update_render = false;
 	bool is_snap_to_grid = false;
 	bool is_mass_mode = false;
+	bool is_helper_box = false;
 	float mass_m = 100.0f;
 
 	olc::vi2d level_size;
@@ -121,8 +122,8 @@ private: // GUI
 	gui::ColorPanel color_panel;
 	gui::ListBox poly_panel;
 
-
-	//gui::TextPanel help_box;
+	gui::TextPanel help_box;
+	void SetHelpBox(int n_slide);
 
 	olc::Renderable icon_set;
 

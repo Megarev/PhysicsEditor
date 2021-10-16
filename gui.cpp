@@ -423,14 +423,19 @@ void gui::TextPanel::SetPanel(const olc::vi2d& _position, const olc::vi2d& _size
 
 bool gui::TextPanel::Input(olc::PixelGameEngine* pge)
 {
-	return false;
+	if (pge->GetMouse(0).bPressed) {
+		return IsPointInBounds(pge->GetMousePos());
+	}
+	return true;
 }
 
 
 void gui::TextPanel::Draw(olc::PixelGameEngine* pge) {
 
+	if (!is_render) return;
+
 	int n = title.size() ? 2 : 0;
-	int y_offset = pge->GetTextSizeProp("").y * scale * 1.5f;
+	int y_offset = pge->GetTextSizeProp("").y * scale * 1.5f + 5;
 
 	pge->FillRect((olc::vf2d)position, (olc::vf2d)size, color * 0.25f);
 	pge->DrawRect(position, size, olc::WHITE);
