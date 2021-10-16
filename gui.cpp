@@ -391,10 +391,8 @@ void gui::TextBox::Draw(olc::PixelGameEngine* pge) {
 	pge->FillRect(position, size, color * 0.15f);
 	pge->DrawRect(position, size, olc::WHITE);
 	
-	int n = 0, y_offset = pge->GetTextSizeProp("").y + 2;
+	int n = 0, text_offset = 5, y_offset = pge->GetTextSizeProp("").y + 5;
 	float scale = 1.5f;
-	int y_pos = 0;
-	//int y_pos = (size.y - y_offset * pge->GetTextSizeProp(text).y / size.y) / (4 * scale);
 	std::istringstream iss(text);
 	std::string str, s;
 
@@ -402,12 +400,12 @@ void gui::TextBox::Draw(olc::PixelGameEngine* pge) {
 		const std::string& new_str = str + s + " ";
 
 		if (pge->GetTextSizeProp(new_str).x > size.x) {
-			pge->DrawStringPropDecal({ (float)position.x, (float)(n++ * y_offset) + position.y + y_pos }, str, color, { 1.0f, scale });
+			pge->DrawStringPropDecal({ (float)position.x + text_offset, (float)(n++ * y_offset) + position.y + text_offset }, str, color, { 1.0f, scale });
 			str = s + " ";
 		}
 		else {
 			str = new_str;
 		}
 	}
-	pge->DrawStringPropDecal({ (float)position.x, (float)(n * y_offset) + position.y + y_pos }, str, color, { 1.0f, scale });
+	pge->DrawStringPropDecal({ (float)position.x + text_offset, (float)(n * y_offset) + position.y + text_offset }, str, color, { 1.0f, scale });
 }
