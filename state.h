@@ -121,6 +121,9 @@ private: // GUI
 	gui::ColorPanel color_panel;
 	gui::ListBox poly_panel;
 
+
+	//gui::TextPanel help_box;
+
 	olc::Renderable icon_set;
 
 	void ButtonFunctions();

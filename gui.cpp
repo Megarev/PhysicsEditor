@@ -137,9 +137,9 @@ gui::DragBoxPanel::DragBoxPanel(const olc::vi2d& _position, const olc::vi2d& _si
 
 void gui::DragBoxPanel::AddDragBox(const std::string& name, const olc::Pixel& box_color, const std::pair<float, float>& _value_constraints, const olc::vi2d& box_size, float start_value) {
 	
-	int offset = 50;
+	int offset = 25;
 	
-	DragBox box{ { position.x + offset, position.y + (int)drag_boxes.size() * box_size.y + 20 }, box_size, box_color, start_value };
+	DragBox box{ { position.x + size.x - (box_size.x + offset), position.y + (int)drag_boxes.size() * box_size.y + 20 }, box_size, box_color, start_value };
 	box.value_constraints = _value_constraints;
 	drag_boxes.insert({ name, box });
 }
@@ -408,4 +408,57 @@ void gui::TextBox::Draw(olc::PixelGameEngine* pge) {
 		}
 	}
 	pge->DrawStringPropDecal({ (float)position.x + text_offset, (float)(n * y_offset) + position.y + text_offset }, str, color, { 1.0f, scale });
+}
+
+gui::TextPanel::TextPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::vector<std::string>& _texts)
+	: BoxUIBase(_position, _size, _color), texts(_texts) {}
+
+void gui::TextPanel::SetPanel(const olc::vi2d& _position, const olc::vi2d& _size, const olc::Pixel& _color, const std::vector<std::string>& _texts, int _scale) {
+	position = _position;
+	size = _size;
+	color = _color;
+	texts = _texts;
+	scale = _scale;
+}
+
+bool gui::TextPanel::Input(olc::PixelGameEngine* pge)
+{
+	return false;
+}
+
+
+void gui::TextPanel::Draw(olc::PixelGameEngine* pge) {
+
+	int n = title.size() ? 2 : 0;
+	int y_offset = pge->GetTextSizeProp("").y * scale * 1.5f;
+
+	pge->FillRect((olc::vf2d)position, (olc::vf2d)size, color * 0.25f);
+	pge->DrawRect(position, size, olc::WHITE);
+	
+	pge->DrawStringPropDecal({ position.x + (size.x - 4.0f * pge->GetTextSizeProp(title).x) / 2.0f, (float)position.y }, 
+		title, color, { scale * 2.0f, scale * 3.0f });
+	pge->DrawLine(position.x, position.y + n * y_offset, position.x + size.x, position.y + n * y_offset, color);
+
+	int side_offset = 5;
+
+	for (auto& text : texts) {
+		std::istringstream iss(text);
+		std::string s, str;
+
+		pge->FillCircle({ position.x + side_offset, position.y + (n * y_offset) + y_offset / 2 }, 5, color * 0.6f);
+
+		while (iss >> s) {
+			const std::string& new_str = str + s + " ";
+
+			if (pge->GetTextSizeProp(new_str).x > size.x) {
+				pge->DrawStringPropDecal({ (float)position.x + 2.0f * side_offset, (float)position.y + (n++ * y_offset) }, str, color, { (float)scale, scale * 1.5f });
+				str = s + " ";
+			}
+			else {
+				str = new_str;
+			}
+		}
+	
+		pge->DrawStringPropDecal({ (float)position.x + 2.0f * side_offset, (float)position.y + (n++ * y_offset) }, str, color, { (float)scale, scale * 1.5f });
+	}
 }

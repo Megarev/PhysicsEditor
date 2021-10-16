@@ -32,7 +32,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	button_panel = gui::ButtonPanel{ { 1, 1 }, { pge->ScreenWidth() - 2, 36 }, olc::WHITE };
 	button_panel.AddButton("Play", olc::GREEN, false, { 0, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleGrid", olc::MAGENTA, false, { button_size.x, 0 }, button_size, button_size, icon_set.Decal());
-	button_panel.AddButton("ToggleSnapToGrid", olc::CYAN, false, { 2 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
+	button_panel.AddButton("ToggleSnapToGrid", olc::CYAN, true, { 2 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleDrawMode", olc::YELLOW, true, { 3 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleMassMode", olc::WHITE, true, { 4 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	//button_panel.AddButton("ClearLevel", olc::RED, false, { 5 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
@@ -72,6 +72,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	poly_panel.AddItem("Add PolyBall", olc::YELLOW);
 
 	text_box = gui::TextBox{};
+	//help_box = gui::TextPanel{};
 }
 
 bool EditState::IsPointInLevel(const olc::vf2d& point) const {
@@ -180,7 +181,7 @@ void EditState::Input() {
 
 
 	if (!add_polygon && pge->GetKey(olc::C).bHeld && pge->GetKey(olc::CTRL).bHeld) {
-		CopyPolygon(world_m_pos);
+		if (selected_shape) CopyPolygon(selected_shape->position);
 	}
 
 	if (mode == Mode::CONSTRAINTS) {
@@ -435,6 +436,17 @@ void EditState::Draw() {
 
 	// Adding functions
 	if (add_polygon) add_polygon->Draw(pge, offset, is_polygon_fill);
+
+	/*const olc::vi2d& offset = { 40, 40 };
+	help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, olc::YELLOW, {
+		"Right mouse button - Open up the polygons panel",
+		"Middle mouse button - To pan the scene",
+		"Press R to remove the selected polygon",
+		"Press Ctrl + C to copy a polygon"
+	}, 2);
+	help_box.SetTitle("Instructions");
+
+	help_box.Draw(pge);*/
 }
 
 void EditState::Initialize() {
@@ -663,6 +675,7 @@ void EditState::OnMouseReleaseEdit() {
 void EditState::OnMousePressAdd(const olc::vf2d& world_m_pos) {
 	polygons.push_back(PolygonShape{ add_polygon->n_vertices, add_polygon->scale, add_polygon->position, add_polygon->color, add_polygon->id });
 	for (size_t i = 0; i < (size_t)add_polygon->n_vertices; i++) polygons.back().GetVertex(i) = add_polygon->GetVertex(i);
+	polygons.back().properties = add_polygon->properties;
 	
 	layers["fg"].is_update = true;
 	polygons.back().Update(true);
@@ -729,8 +742,6 @@ void EditState::RemoveConstraint() {
 }
 
 void EditState::CopyPolygon(const olc::vf2d& pos) {
-	if (!selected_shape) return;
-
 	if (add_polygon) delete add_polygon;
 	add_polygon = new PolygonShape(selected_shape->n_vertices, selected_shape->scale, is_snap_to_grid ? ToGrid(pos) : (olc::vi2d)pos, selected_shape->color, id_count++);
 	add_polygon->properties = selected_shape->properties;
