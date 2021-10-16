@@ -115,6 +115,8 @@ private: // Layers
 	std::unordered_map<std::string, LayerData> layers;
 private: // GUI
 	gui::ButtonPanel button_panel;
+	gui::Button clear_button;
+
 	gui::DragBoxPanel box_panel, constraints_panel;
 	gui::ColorPanel color_panel;
 	gui::ListBox poly_panel;
