@@ -74,6 +74,11 @@ EditState::EditState(olc::PixelGameEngine* pge)
 
 	text_box = gui::TextBox{};
 	help_box = gui::TextPanel{};
+
+	if (Data::Get().is_edit_init) {
+		Level::Get().DemoScene(polygons, constraint_mgr, joint_mgr, id_count);
+		Data::Get().is_edit_init = false;
+	}
 }
 
 bool EditState::IsPointInLevel(const olc::vf2d& point) const {
@@ -176,6 +181,37 @@ void EditState::Input() {
 
 	if (is_helper_box) return;
 
+	if (pge->GetKey(olc::SPACE).bPressed) {
+
+		std::cout << "Scene data" << std::endl;
+		std::cout << "Polygons" << std::endl;
+
+		for (auto& poly : polygons) {
+			std::cout << "Position: " << poly.position << std::endl;
+			std::cout << "ID: " << poly.id << std::endl;
+			std::cout << "Vertices" << std::endl;
+			for (auto& v : poly.GetVertices()) {
+				std::cout << "{ " << v.x << ", " << v.y << " }," << std::endl;
+			}
+		}
+		
+		std::cout << "Constraints" << std::endl;
+
+		for (auto& constraints : constraint_mgr.constraints_data) {
+			std::cout << "Position: " << constraints.positions.first << " " << constraints.positions.second << std::endl;
+			std::cout << "k, b: " << constraints.k << ", " << constraints.b << std::endl;
+			std::cout << "PolygonID: " << constraints.id << std::endl;
+		}
+
+		std::cout << "JointPairs" << std::endl;
+
+		for (auto& j : joint_mgr.data) {
+			std::cout << "Position: " << j.positions.first << " " << j.positions.second << std::endl;
+			std::cout << "k, b: " << j.k << ", " << j.b << std::endl;
+			std::cout << "PolygonIDs: " << j.ids.first << " " << j.ids.second << std::endl;
+		}
+	}
+
 	if (mode == Mode::POLYGON) {
 		is_gui_input |= poly_panel.Input(pge);
 		ListBoxFunctions();
@@ -183,9 +219,12 @@ void EditState::Input() {
 
 	if (is_gui_input && !add_polygon) return;
 
-
 	if (!add_polygon && pge->GetKey(olc::C).bHeld) {
-		if (selected_shape) CopyPolygon(selected_shape->position);
+		if (selected_shape) {
+			CopyPolygon(selected_shape->position);
+			selected_shape = nullptr;
+			selected_vertex = nullptr;
+		}
 	}
 
 	if (mode == Mode::CONSTRAINTS) {
