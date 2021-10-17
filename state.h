@@ -4,6 +4,19 @@
 #include "gui.h"
 #include "physics.h"
 #include "constraints.h"
+#include "Levels.h"
+
+class Data {
+private:
+	Data() {}
+public:
+	static Data& Get() {
+		static Data info;
+		return info;
+	}
+public:
+	bool is_edit_init = true;
+};
 
 class LayerManager {
 private:
@@ -35,7 +48,7 @@ public:
 	JointPairManager joint_mgr;
 public:
 	olc::vf2d offset; // Panning
-	bool is_polygon_fill = false;
+	bool is_polygon_fill = true;
 
 	bool is_state_change = false;
 	enum class States {
