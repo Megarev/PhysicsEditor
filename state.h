@@ -16,6 +16,7 @@ public:
 	}
 public:
 	bool is_edit_init = true;
+	olc::vi2d level_size = { 768, 768 };
 };
 
 class LayerManager {

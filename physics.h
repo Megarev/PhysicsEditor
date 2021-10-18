@@ -721,7 +721,7 @@ void Constraint::ApplyForces(RigidBody& rb, float dt, bool is_input) {
     const olc::vf2d& force = -k * offset - b * rb.GetVelocity();
 
     //float inv_mass = is_input ? 1.0f : rb.inv_mass;
-    float inv_mass = 1.0f;
+    float inv_mass = rb.inv_mass == 0.0f ? 0.0f : 1.0f;
 
     if (!rb.is_input) rb.AddAcceleration(force * inv_mass);
 }

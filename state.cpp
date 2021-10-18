@@ -9,7 +9,8 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	: State(pge) {
 
 	unit_size = 32;
-	level_size = { (int)(pge->ScreenWidth() / unit_size) * (int)unit_size, (int)(pge->ScreenHeight() / unit_size) * (int)unit_size };
+	//level_size = { (int)(pge->ScreenWidth() / unit_size) * (int)unit_size, (int)(pge->ScreenHeight() / unit_size) * (int)unit_size };
+	level_size = { (int)(Data::Get().level_size.x / unit_size) * (int)unit_size, (int)(Data::Get().level_size.y / unit_size) * (int)unit_size };
 
 	//polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, (olc::vf2d)level_size / 2.0f, olc::WHITE, id_count++ });
 	edit_feature = EditFeature::NONE;
@@ -838,10 +839,12 @@ void EditState::SetHelpBox(int n_slide) {
 	}
 }
 
-
 void EditState::OnWindowUpdate() {
 	layers["bg"].is_update = true;
 	layers["fg"].is_update = true;
+	
+	int button_size = 36;
+	clear_button.position = { pge->ScreenWidth() - button_size + 1, 1 };
 }
 
 PlayState::PlayState(olc::PixelGameEngine* pge)
