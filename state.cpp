@@ -875,7 +875,7 @@ void PlayState::Initialize() {
 		polygon_id.insert({ p.id, id });
 	}
 
-	int n_rope_segments = 5;
+	int n_rope_segments = 10;
 	for (auto& data : constraint_mgr.constraints_data) {
 		Constraint c(data.positions.second, (data.positions.second - data.positions.first).mag(), data.k, data.b, n_rope_segments);
 		c.Attach(polygon_id[data.id]);
@@ -891,6 +891,15 @@ void PlayState::Initialize() {
 
 void PlayState::Input() {
 	edit_button.Input(pge);
+
+	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
+
+	olc::vf2d m_pos_before_zoom = (m_pos / scale_zoom + offset);
+	if (pge->GetMouseWheel() < 0) scale_zoom = std::fminf(2.5f, scale_zoom * 1.1f);
+	if (pge->GetMouseWheel() > 0) scale_zoom = std::fmaxf(0.5f, scale_zoom * 0.9f);
+	olc::vf2d m_pos_after_zoom = (m_pos / scale_zoom + offset);
+
+	offset += (m_pos_after_zoom - m_pos_before_zoom);
 }
 
 void PlayState::Update() {
@@ -905,7 +914,7 @@ void PlayState::Update() {
 	float p = 0.2f;
 	for (int i = 0; i < n_iter; i++) scene.Update(pge->GetElapsedTime() / (p * n_iter));
 	if (pge->GetMouse(2).bHeld) {
-		offset += -(m_pos - prev_m_pos);
+		offset += -(m_pos - prev_m_pos) / scale_zoom;
 	}
 
 	prev_m_pos = m_pos;
@@ -914,7 +923,7 @@ void PlayState::Update() {
 
 void PlayState::Draw() {
 
-	scene.Draw(pge, offset /* + olc::vf2d{pge->ScreenWidth() * 0.5f, pge->ScreenHeight() * 0.5f} */, is_polygon_fill);
+	scene.Draw(pge, offset /* + olc::vf2d{pge->ScreenWidth() * 0.5f, pge->ScreenHeight() * 0.5f} */, scale_zoom, is_polygon_fill);
 
 	// GUI
 	edit_button.DrawSprite(pge);

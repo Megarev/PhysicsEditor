@@ -40,7 +40,7 @@ public:
     bool IsConstrained(const olc::vf2d& a, const olc::vf2d& b); // Is the polygon within bounds
     bool IsContainPoint(const olc::vf2d& p); // Is the given point within polygon bounds
 
-    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill = false, float alpha = 0.0f); // Polygon Line Drawing
+    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, bool is_fill = false, float alpha = 0.0f); // Polygon Line Drawing
     void DrawDecals(olc::PixelGameEngine* pge, float alpha = 0.0f); // Decal drawing
 
     static std::pair<float, olc::vf2d> SATOverlap(RigidBody& a, RigidBody& b);
@@ -115,7 +115,7 @@ public:
 
     void Logic();
     void PointTo(const olc::vf2d& p);
-    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, const olc::Pixel& color) const;
+    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, const olc::Pixel& color) const;
 };
 
 class Constraint {
@@ -134,7 +134,7 @@ public:
     void ApplyForces(RigidBody& rb, float dt, bool is_input = false);
     void Update(RigidBody& rb, float dt);
 
-    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, olc::Pixel color = olc::WHITE);
+    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, olc::Pixel color = olc::WHITE);
 
     void SetPivotPosition(const olc::vf2d& p) { pivot_pos = p; }
     const olc::vf2d& GetPivotPosition() const { return pivot_pos; }
@@ -157,7 +157,7 @@ public:
     int GetID(int index) const { return index == 0 ? rb_ids.first : rb_ids.second; }
 
     void Update(RigidBody& rb1, RigidBody& rb2, float dt);
-    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, olc::Pixel color = olc::WHITE);
+    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, olc::Pixel color = olc::WHITE);
 };
 
 class RigidPair {
@@ -174,7 +174,7 @@ public:
     int GetID(int index) const { return index == 0 ? rb_ids.first : rb_ids.second; }
     
     void Update(RigidBody& rb1, RigidBody& rb2, float dt);
-    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, olc::Pixel color = olc::YELLOW);
+    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, olc::Pixel color = olc::YELLOW);
 };
 
 class Scene {
@@ -197,8 +197,8 @@ public:
     void Initialize(const olc::vf2d& _screen_size) { screen_size = _screen_size; }
 
     void Update(float dt, bool is_debug = false);
-    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill = false);
-    void DrawDecals(olc::PixelGameEngine* pge, const olc::vf2d& offset);
+    void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, bool is_fill = false);
+    void DrawDecals(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom);
 
     void AddShape(const olc::vf2d& p, int n_vertices, float len, float angle, float angular_velocity, float mass, olc::Pixel color = olc::WHITE, float e = 0.1f, float sf = 0.8f, float df = 0.4f);
     int AddShape(const RigidBody& rb) { int id = shapes.size(); shapes.insert({ id, rb }); return id; }
@@ -398,11 +398,11 @@ std::pair<float, olc::vf2d> RigidBody::SATOverlap(RigidBody& r1, RigidBody& r2) 
     return { overlap, overlap_axis };
 }
 
-void RigidBody::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill, float alpha) {
+void RigidBody::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, bool is_fill, float alpha) {
     // Linearly interpolate position with respect to alpha
     std::vector<olc::vf2d> interpolated_vertices(n);
     for (uint32_t a = 0; a < vertices.size(); a++) {
-        interpolated_vertices[a] = alpha * prev_vertices[a] + (1.0f - alpha) * vertices[a] - offset;
+        interpolated_vertices[a] = (alpha * prev_vertices[a] + (1.0f - alpha) * vertices[a]) / scale_zoom - offset;
     }
 
     if (!is_fill) {
@@ -698,8 +698,8 @@ void Segment::PointTo(const olc::vf2d& p) {
     a = p - len0 * olc::vf2d(cosf(angle), sinf(angle));
 }
 
-void Segment::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, const olc::Pixel& color) const {
-    pge->DrawLine(a - offset, b - offset, color);
+void Segment::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, const olc::Pixel& color) const {
+    pge->DrawLine(a / scale_zoom - offset, b / scale_zoom - offset, color);
 }
 
 Constraint::Constraint(const olc::vf2d& p, float _len, float _k, float _b, int _n, bool _is_sling) 
@@ -754,8 +754,8 @@ void Constraint::Update(RigidBody& rb, float dt) {
 }
 
 
-void Constraint::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, olc::Pixel color) {
-    for (const auto& s : segments) s.Draw(pge, offset, color);
+void Constraint::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, olc::Pixel color) {
+    for (const auto& s : segments) s.Draw(pge, offset, scale_zoom, color);
 }
 
 // JointPair
@@ -783,8 +783,8 @@ void JointPair::Update(RigidBody& rb1, RigidBody& rb2, float dt) {
     m.SetState();
 }
 
-void JointPair::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, olc::Pixel color) {
-    jointAB.Draw(pge, offset, color);
+void JointPair::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, olc::Pixel color) {
+    jointAB.Draw(pge, offset, scale_zoom, color);
     //jointBA.Draw(pge, color);
 }
 
@@ -813,8 +813,8 @@ void RigidPair::Update(RigidBody& rb1, RigidBody& rb2, float dt) {
     point_pos = rb2.GetPosition();
 }
 
-void RigidPair::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, olc::Pixel color) {
-    pge->DrawLine(pivot_pos - offset, point_pos - offset, color);
+void RigidPair::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, olc::Pixel color) {
+    pge->DrawLine(pivot_pos / scale_zoom - offset, point_pos / scale_zoom - offset, color);
 }
 
 // Scene
@@ -902,18 +902,18 @@ void Scene::SetBounds(const olc::vf2d& bounds) {
     screen_size = bounds;
 }
 
-void Scene::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill) {
-    for (auto& c : constraints) c.Draw(pge, offset, olc::YELLOW);
-    for (auto& j : joint_pairs) j.Draw(pge, offset, olc::CYAN);
-    for (auto& r : rigid_pairs) r.Draw(pge, offset);
-    for (auto& s : shapes) s.second.Draw(pge, offset, is_fill, 0.0f);
+void Scene::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, bool is_fill) {
+    for (auto& c : constraints) c.Draw(pge, offset, scale_zoom, olc::YELLOW);
+    for (auto& j : joint_pairs) j.Draw(pge, offset, scale_zoom, olc::CYAN);
+    for (auto& r : rigid_pairs) r.Draw(pge, offset, scale_zoom);
+    for (auto& s : shapes) s.second.Draw(pge, offset, scale_zoom, is_fill, 0.0f);
 }
 
-void Scene::DrawDecals(olc::PixelGameEngine* pge, const olc::vf2d& offset) {
-    for (auto& c : constraints) c.Draw(pge, offset);
-    for (auto& j : joint_pairs) j.Draw(pge, offset);
-    for (auto& r : rigid_pairs) r.Draw(pge, offset);
-    for (auto& s : shapes) s.second.Draw(pge, offset, false, 0.0f);
+void Scene::DrawDecals(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom) {
+    for (auto& c : constraints) c.Draw(pge, offset, scale_zoom);
+    for (auto& j : joint_pairs) j.Draw(pge, offset, scale_zoom);
+    for (auto& r : rigid_pairs) r.Draw(pge, offset, scale_zoom);
+    for (auto& s : shapes) s.second.Draw(pge, offset, scale_zoom, false, 0.0f);
 }
 
 void Scene::AddShape(const olc::vf2d& p, int n_vertices, float len, float angle, float angular_velocity, float mass, olc::Pixel color, float e, float sf, float df) {

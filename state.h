@@ -167,6 +167,8 @@ private:
 	// Main play
 	Scene scene;
 	olc::vf2d prev_m_pos;
+	
+	float scale_zoom = 1.0f;
 public:
 	PlayState(olc::PixelGameEngine* pge);
 
