@@ -354,7 +354,7 @@ void EditState::DrawBackground() {
 		}
 	}
 	else {
-		pge->DrawRect((olc::vi2d)ToScreen({ 0.0f, 0.0f }), { pge->ScreenWidth(), pge->ScreenHeight() }, olc::WHITE);
+		pge->DrawRect((olc::vi2d)ToScreen({ 0.0f, 0.0f }), (olc::vi2d)((olc::vf2d)level_size / scale_zoom), olc::WHITE);
 	}
 
 	pge->SetDrawTarget(nullptr);
