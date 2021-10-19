@@ -79,7 +79,7 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	if (Data::Get().is_edit_init) {
 		Level::Get().DemoScene(polygons, constraint_mgr, joint_mgr, id_count);
 		scale_zoom = 1.2f;
-		offset -= olc::vf2d{ (float)unit_size, (float)unit_size };
+		//offset -= olc::vf2d{ (float)unit_size, (float)unit_size };
 		Data::Get().is_edit_init = false;
 	}
 }
@@ -500,7 +500,7 @@ void EditState::Draw() {
 	poly_panel.Draw(pge);
 
 	// Adding functions
-	if (add_polygon) add_polygon->Draw(pge, offset, is_polygon_fill);
+	if (add_polygon) add_polygon->Draw(pge, offset, scale_zoom, is_polygon_fill);
 
 	//const olc::vi2d& offset = { 40, 40 };
 	//help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, olc::YELLOW, {
