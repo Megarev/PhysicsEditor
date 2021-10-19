@@ -9,6 +9,7 @@ void Editor::StateUpdate() {
 
 			const std::vector<PolygonShape> polygons = play_state->polygons;
 			const olc::vf2d offset = play_state->offset;
+			float scale_zoom = play_state->scale_zoom;
 			const bool is_polygon_fill = play_state->is_polygon_fill;
 			
 			ConstraintManager mgr = play_state->constraint_mgr;
@@ -18,6 +19,7 @@ void Editor::StateUpdate() {
 			state->is_polygon_fill = is_polygon_fill;
 			state->polygons = polygons;
 			state->offset = offset;
+			state->scale_zoom = scale_zoom;
 			state->constraint_mgr = std::move(mgr);
 			state->joint_mgr = std::move(joint_mgr);
 			state->Initialize();
@@ -27,6 +29,7 @@ void Editor::StateUpdate() {
 			EditState* edit_state = static_cast<EditState*>(state.get());
 
 			const olc::vf2d offset = edit_state->offset;
+			float scale_zoom = edit_state->scale_zoom;
 			const std::vector<PolygonShape> polygons = edit_state->polygons;
 			const bool is_polygon_fill = edit_state->is_polygon_fill;
 			//std::cout << "PolygonData: " << offset << " " << polygons.size() << std::endl;
@@ -36,6 +39,7 @@ void Editor::StateUpdate() {
 
 			state = std::make_unique<PlayState>(pge);
 			state->offset = offset;
+			state->scale_zoom = scale_zoom;
 			state->polygons = polygons;
 			state->is_polygon_fill = is_polygon_fill;
 			state->constraint_mgr = std::move(mgr);

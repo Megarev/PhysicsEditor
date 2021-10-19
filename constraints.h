@@ -19,8 +19,8 @@ public:
 	void OnMousePress(PolygonShape* _poly);
 	void OnMouseRelease(const olc::vf2d& world_m_pos, float _k, float _b);
 
-	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset);
-	void DrawConstraints(olc::PixelGameEngine* pge, const olc::vf2d& offset);
+	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom);
+	void DrawConstraints(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom);
 
 	void ClearConstraints();
 };
@@ -43,8 +43,8 @@ public:
 	void OnMousePress(PolygonShape* _polyA);
 	void OnMouseRelease(PolygonShape* _polyB, float _k, float _b);
 
-	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset);
-	void DrawJointPairs(olc::PixelGameEngine* pge, const olc::vf2d& offset);
+	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom);
+	void DrawJointPairs(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom);
 
 	void ClearJointPairs();
 };

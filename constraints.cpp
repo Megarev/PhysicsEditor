@@ -13,15 +13,15 @@ void ConstraintManager::OnMouseRelease(const olc::vf2d& world_m_pos, float _k, f
 	poly = nullptr;
 }
 
-void ConstraintManager::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset) {
+void ConstraintManager::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom) {
 	if (poly) {
-		pge->DrawLine((olc::vi2d)(poly->position - offset), (olc::vi2d)(pge->GetMousePos()), olc::DARK_YELLOW);
+		pge->DrawLine((olc::vi2d)(poly->position / scale_zoom - offset), (olc::vi2d)(pge->GetMousePos()), olc::DARK_YELLOW);
 	}
 }
 
-void ConstraintManager::DrawConstraints(olc::PixelGameEngine* pge, const olc::vf2d& offset) {
+void ConstraintManager::DrawConstraints(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom) {
 	for (auto& constraint_pair : constraints_data) {
-		pge->DrawLine((olc::vi2d)(constraint_pair.positions.first - offset), (olc::vi2d)(constraint_pair.positions.second - offset), olc::YELLOW);
+		pge->DrawLine((olc::vi2d)(constraint_pair.positions.first / scale_zoom - offset), (olc::vi2d)(constraint_pair.positions.second / scale_zoom - offset), olc::YELLOW);
 	}
 }
 
@@ -48,16 +48,16 @@ void JointPairManager::OnMouseRelease(PolygonShape* _polyB, float _k, float _b) 
 }
 
 
-void JointPairManager::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset) {
+void JointPairManager::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom) {
 	if (poly) {
-		pge->DrawLine((olc::vi2d)(poly->position - offset), (olc::vi2d)(pge->GetMousePos()), olc::DARK_CYAN);
+		pge->DrawLine((olc::vi2d)(poly->position / scale_zoom - offset), (olc::vi2d)(pge->GetMousePos()), olc::DARK_CYAN);
 	}
 }
 
 
-void JointPairManager::DrawJointPairs(olc::PixelGameEngine* pge, const olc::vf2d& offset) {
+void JointPairManager::DrawJointPairs(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom) {
 	for (auto& pair : data) {
-		pge->DrawLine((olc::vi2d)(pair.positions.first - offset), (olc::vi2d)(pair.positions.second - offset), olc::CYAN);
+		pge->DrawLine((olc::vi2d)(pair.positions.first / scale_zoom - offset), (olc::vi2d)(pair.positions.second / scale_zoom - offset), olc::CYAN);
 	}
 }
 

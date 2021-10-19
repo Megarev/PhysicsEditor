@@ -13,7 +13,7 @@ PolygonShape::PolygonShape(int _n_vertices, const olc::vf2d& size, const olc::vf
 
 bool PolygonShape::IsPointInBounds(const olc::vf2d& point) const {
 	// Iterate over all triangles
-	for (size_t i = 0; i < vertices.size() - 2; i++) {
+	for (size_t i = 0; (int)i < (int)(vertices.size() - 2); i++) {
 		size_t j = (i + 1) % vertices.size();
 		size_t k = (i + 2) % vertices.size();
 
@@ -91,19 +91,20 @@ void PolygonShape::Update(bool force_update) {
 	is_update_shape = false;
 }
 
-void PolygonShape::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill) const {
+void PolygonShape::Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, bool is_fill) const {
 	if (is_fill) {
 		for (size_t i = 0; i < vertices.size() - 2; i++) {
 			size_t j = (i + 1) % vertices.size();
 			size_t k = (i + 2) % vertices.size();
 
-			pge->FillTriangle((olc::vi2d)(vertices[0] - offset), (olc::vi2d)(vertices[j] - offset), (olc::vi2d)(vertices[k] - offset), color);
+			pge->FillTriangle((olc::vi2d)(vertices[0] / scale_zoom - offset), (olc::vi2d)(vertices[j] / scale_zoom - offset), (olc::vi2d)(vertices[k] / scale_zoom - offset), color);
+			pge->FillTriangle((olc::vi2d)(vertices[0] / scale_zoom - offset), (olc::vi2d)(vertices[j] / scale_zoom - offset), (olc::vi2d)(vertices[k] / scale_zoom - offset), color);
 		}
 	}
 	else {
 		for (size_t i = 0; i < vertices.size() - 1; i++) {
-			pge->DrawLine(vertices[i] - offset, vertices[i + 1] - offset, color);
+			pge->DrawLine(vertices[i] / scale_zoom - offset, vertices[i + 1] / scale_zoom - offset, color);
 		}
-		pge->DrawLine(vertices.back() - offset, vertices[0] - offset, color);
+		pge->DrawLine(vertices.back() / scale_zoom - offset, vertices[0] / scale_zoom - offset, color);
 	}
 }

@@ -296,8 +296,9 @@ void EditState::Input() {
 		if (pge->GetKey(olc::R).bReleased) { RemovePolygon(); }
 	}
 
+
 	// Panning functions
-	if (pge->GetMouse(2).bHeld) { PanLevel(m_pos); }
+	if (pge->GetMouse(2).bHeld || pge->GetMouseWheel()) { PanAndZoomLevel(m_pos); }
 
 	prev_m_pos = m_pos;
 }
@@ -367,7 +368,7 @@ void EditState::Draw() {
 		for (auto& p : polygons) {
 			if (is_mass_mode) p.color = olc::WHITE * (p.properties.mass / mass_m);
 			else p.color = p.init_color;
-			p.Draw(pge, offset, is_polygon_fill);
+			p.Draw(pge, offset, scale_zoom, is_polygon_fill);
 		}
 		if (selected_shape) {
 			pge->FillCircle((olc::vi2d)ToScreen(selected_shape->position), 5, olc::RED);
@@ -378,8 +379,8 @@ void EditState::Draw() {
 			if (selected_vertex) pge->FillCircle((olc::vi2d)ToScreen(*selected_vertex), 5, olc::MAGENTA);
 		}
 
-		constraint_mgr.DrawConstraints(pge, offset);
-		joint_mgr.DrawJointPairs(pge, offset);
+		constraint_mgr.DrawConstraints(pge, offset, scale_zoom);
+		joint_mgr.DrawJointPairs(pge, offset, scale_zoom);
 
 		layers["fg"].is_update = false;
 		pge->SetDrawTarget(nullptr);
@@ -398,8 +399,8 @@ void EditState::Draw() {
 		help_box.is_render = true;
 	}
 
-	constraint_mgr.Draw(pge, offset);
-	joint_mgr.Draw(pge, offset);
+	constraint_mgr.Draw(pge, offset, scale_zoom);
+	joint_mgr.Draw(pge, offset, scale_zoom);
 	
 	const olc::vi2d& m_pos = pge->GetMousePos();
 
@@ -521,8 +522,16 @@ void EditState::Initialize() {
 	id_count = id_pos + 1;
 }
 
-void EditState::PanLevel(const olc::vf2d& m_pos) {
+void EditState::PanAndZoomLevel(const olc::vf2d& m_pos) {
 	offset += -(m_pos - prev_m_pos);
+
+	const olc::vf2d& m_pos_before_zoom = ToScreen(m_pos);
+	if (pge->GetMouseWheel() > 0) scale_zoom = std::fmaxf(0.5f, scale_zoom * 0.9f);
+	if (pge->GetMouseWheel() < 0) scale_zoom = std::fminf(2.5f, scale_zoom * 1.1f);
+	const olc::vf2d& m_pos_after_zoom = ToScreen(m_pos);
+
+	offset += (m_pos_after_zoom - m_pos_before_zoom);
+
 	layers["bg"].is_update = true;
 	layers["fg"].is_update = true;
 }

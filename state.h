@@ -50,6 +50,7 @@ public:
 public:
 	olc::vf2d offset; // Panning
 	bool is_polygon_fill = true;
+	float scale_zoom = 1.0f;
 
 	bool is_state_change = false;
 	enum class States {
@@ -90,12 +91,12 @@ private: // Main editor
 
 	bool IsPointInLevel(const olc::vf2d& point) const;
 
-	olc::vf2d ToWorld(const olc::vf2d& point) const { return point + offset; }
-	olc::vf2d ToScreen(const olc::vf2d& point) const { return point - offset; }
+	olc::vf2d ToWorld(const olc::vf2d& point) const { return (point + offset) * scale_zoom; }
+	olc::vf2d ToScreen(const olc::vf2d& point) const { return point / scale_zoom - offset; }
 	olc::vi2d ToGrid(const olc::vf2d& point) const { return olc::vi2d(point / (int)unit_size) * (int)unit_size; }
 
 	void Initialize() override;
-	void PanLevel(const olc::vf2d& m_pos);
+	void PanAndZoomLevel(const olc::vf2d& m_pos);
 private: // Editing functions
 	uint32_t unit_size = 0;
 	olc::vf2d press_m_pos, prev_m_pos;
@@ -167,8 +168,6 @@ private:
 	// Main play
 	Scene scene;
 	olc::vf2d prev_m_pos;
-	
-	float scale_zoom = 1.0f;
 public:
 	PlayState(olc::PixelGameEngine* pge);
 

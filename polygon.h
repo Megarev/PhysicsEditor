@@ -43,7 +43,7 @@ public:
 	void Initialize();
 
 	void Update(bool force_update = false);
-	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, bool is_fill = false) const;
+	void Draw(olc::PixelGameEngine* pge, const olc::vf2d& offset, float scale_zoom, bool is_fill = false) const;
 
 	std::vector<olc::vf2d> GetVertices() const { return vertices; }
 	olc::vf2d& GetVertex(size_t index) { return vertices[index]; }
