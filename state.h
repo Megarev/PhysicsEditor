@@ -138,6 +138,7 @@ private: // GUI
 	gui::ListBox poly_panel;
 
 	gui::TextPanel help_box;
+	olc::Pixel help_box_color;
 	void SetHelpBox(int n_slide);
 
 	olc::Renderable icon_set;

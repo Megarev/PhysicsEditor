@@ -184,7 +184,7 @@ void EditState::Input() {
 
 	if (is_helper_box) return;
 
-	if (pge->GetKey(olc::SPACE).bPressed) {
+	/*if (pge->GetKey(olc::SPACE).bPressed) {
 
 		std::cout << "Scene data" << std::endl;
 		std::cout << "Polygons" << std::endl;
@@ -213,7 +213,7 @@ void EditState::Input() {
 			std::cout << "k, b: " << j.k << ", " << j.b << std::endl;
 			std::cout << "PolygonIDs: " << j.ids.first << " " << j.ids.second << std::endl;
 		}
-	}
+	}*/
 
 	if (mode == Mode::POLYGON) {
 		is_gui_input |= poly_panel.Input(pge);
@@ -543,6 +543,7 @@ void EditState::ButtonFunctions() {
 
 	if (button_panel("ShowHelpBox")->is_pressed) {
 		is_helper_box = !is_helper_box;
+		if (is_helper_box) help_box_color = olc::Pixel(rand() % 256, rand() % 256, rand() % 256) * 1.5f;
 	}
 
 	if (button_panel("Play")->is_pressed) {
@@ -835,8 +836,8 @@ void EditState::SetHelpBox(int n_slide) {
 	switch (n_slide) {
 	case 0:
 		olc::vi2d offset = { 40, 40 };
-		
-		help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, olc::CYAN, {
+
+		help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, help_box_color, {
 			"Mass: Heaviness of polygons",
 			"e: Restitution/bounciness",
 			"sf: Static friction",
