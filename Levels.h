@@ -119,6 +119,6 @@ public:
 
 
 		constraint_mgr.constraints_data.push_back({ 8, { { 513.0f, 15.0f }, { 417.0f, 23.0f } }, 0.5f, 0.02f });
-		joint_mgr.data.push_back({ { 8, 9 }, { { 612.0f, 32.0f }, { 513.0f, 22.0f } }, 0.5f, 0.02f });
+		joint_mgr.data.push_back({ { 8, 9 }, { { 513.0f, 22.0f }, { 612.0f, 32.0f } }, 0.5f, 0.02f });
 	}
 };
