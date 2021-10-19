@@ -78,6 +78,8 @@ EditState::EditState(olc::PixelGameEngine* pge)
 
 	if (Data::Get().is_edit_init) {
 		Level::Get().DemoScene(polygons, constraint_mgr, joint_mgr, id_count);
+		scale_zoom = 1.2f;
+		offset -= olc::vf2d{ (float)unit_size, (float)unit_size };
 		Data::Get().is_edit_init = false;
 	}
 }
