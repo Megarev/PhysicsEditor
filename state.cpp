@@ -7,24 +7,19 @@ void EditState::IsRenderGUI(bool state) {
 
 EditState::EditState(olc::PixelGameEngine* pge)
 	: State(pge) {
-
 	unit_size = 32;
-	//level_size = { (int)(pge->ScreenWidth() / unit_size) * (int)unit_size, (int)(pge->ScreenHeight() / unit_size) * (int)unit_size };
 	level_size = { (int)(Data::Get().level_size.x / unit_size) * (int)unit_size, (int)(Data::Get().level_size.y / unit_size) * (int)unit_size };
 
-	//polygons.push_back(PolygonShape{ 5, { 100.0f, 100.0f }, (olc::vf2d)level_size / 2.0f, olc::WHITE, id_count++ });
 	edit_feature = EditFeature::NONE;
 	mode = Mode::POLYGON;
 
 	icon_set.Load("images/iconset.png");
 
 	uint32_t fg_layer = LayerManager::Get().GetLayer("fg");
-	//uint32_t fg_layer = pge->CreateLayer();
 	pge->EnableLayer(fg_layer, true);
 	layers.insert({ "fg", { fg_layer, true, true } });
 	
 	uint32_t bg_layer = LayerManager::Get().GetLayer("bg");
-	//uint32_t bg_layer = pge->CreateLayer();
 	pge->EnableLayer(bg_layer, true);
 	layers.insert({ "bg", { bg_layer, true, true } });
 
@@ -36,7 +31,6 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	button_panel.AddButton("ToggleSnapToGrid", olc::CYAN, true, { 2 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleDrawMode", olc::YELLOW, true, { 3 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ToggleMassMode", olc::WHITE, true, { 4 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
-	//button_panel.AddButton("ClearLevel", olc::RED, false, { 5 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("AddConstraint", olc::YELLOW, true, { 6 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("AddJointPair", olc::CYAN, true, { 7 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
 	button_panel.AddButton("ShowHelpBox", olc::WHITE * 0.9f, false, { 8 * button_size.x, 0 }, button_size, button_size, icon_set.Decal());
@@ -55,7 +49,6 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	box_panel.AddDragBox("w", olc::BLUE, { -5.0f, 5.0f }, box_size, 0.0f);
 
 	constraints_panel = gui::DragBoxPanel{ { pge->ScreenWidth() - panel_size.x, pge->ScreenHeight() - panel_size.y }, { panel_size.x, panel_size.y - 3 * box_size.y }, olc::VERY_DARK_GREEN, "Settings" };
-	constraints_panel.is_render = false;
 
 	const olc::Pixel& ORANGE = olc::Pixel(256, 165, 0);
 	constraints_panel.AddDragBox("k", ORANGE, { 0.1f, INFINITY }, box_size, 0.5f);
@@ -64,7 +57,6 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	constraints_panel.SetDragBoxSpeed("b", 0.01f);
 
 	color_panel = gui::ColorPanel({ 32, pge->ScreenHeight() - 200 }, { 170, 170 }, olc::VERY_DARK_YELLOW, "images/color_wheel.png");
-	color_panel.is_render = false;
 
 	poly_panel = gui::ListBox{ { 0, 0 }, { 100, 100 }, olc::VERY_DARK_RED, 10 };
 	poly_panel.AddItem("Add Hexagon", olc::YELLOW);
@@ -79,7 +71,6 @@ EditState::EditState(olc::PixelGameEngine* pge)
 	if (Data::Get().is_edit_init) {
 		Level::Get().DemoScene(polygons, constraint_mgr, joint_mgr, id_count);
 		scale_zoom = 1.2f;
-		//offset -= olc::vf2d{ (float)unit_size, (float)unit_size };
 		Data::Get().is_edit_init = false;
 	}
 }
@@ -169,15 +160,14 @@ void EditState::Input() {
 	bool is_gui_input = false;
 	const olc::vf2d& m_pos = (olc::vf2d)pge->GetMousePos();
 	const olc::vf2d& world_m_pos = ToWorld(m_pos);
-	
+
 	// GUI
 	is_gui_input |= box_panel.Input(pge) | clear_button.Input(pge);
 	is_gui_input |= constraints_panel.Input(pge);
-	bool is_change_polygon_color = color_panel.Input(pge);
-	if (is_change_polygon_color | is_gui_input) layers["fg"].is_update = true;
+	is_gui_input |= color_panel.Input(pge);
+	if (is_gui_input) layers["fg"].is_update = true;
 	
 	is_gui_input |= button_panel.Input(pge); ButtonFunctions();
-	is_gui_input |= is_change_polygon_color;
 	
 	// Adding functions
 	if (pge->GetMouse(0).bPressed && add_polygon) { OnMousePressAdd(world_m_pos); }
@@ -222,72 +212,56 @@ void EditState::Input() {
 
 	if (is_gui_input && !add_polygon) return;
 
-	if (!add_polygon && pge->GetKey(olc::C).bHeld) {
-		if (selected_shape) {
-			CopyPolygon(selected_shape->position);
-			selected_shape = nullptr;
-			selected_vertex = nullptr;
-		}
-	}
-
-	if (mode == Mode::CONSTRAINTS) {
-		if (!constraint_mgr.is_press) {
-			if (pge->GetMouse(0).bPressed) {
-				for (auto& poly : polygons) {
-					if (poly.IsPointInBounds(world_m_pos)) {
-						constraint_mgr.OnMousePress(&poly);
-						break;
-					}
+	switch (mode) {
+	case Mode::CONSTRAINTS:
+		if (!constraint_mgr.is_press && pge->GetMouse(0).bPressed) {
+			for (auto& poly : polygons) {
+				if (poly.IsPointInBounds(world_m_pos)) {
+					constraint_mgr.OnMousePress(&poly);
+					break;
 				}
 			}
 		}
-		else {
-			if (pge->GetMouse(0).bReleased) {
+		else if (pge->GetMouse(0).bReleased) {
+			float k = constraints_panel("k")->value;
+			float b = constraints_panel("b")->value;
 
-				float k = constraints_panel("k")->value;
-				float b = constraints_panel("b")->value;
-
-				constraint_mgr.OnMouseRelease(world_m_pos, k, b);
-				layers["fg"].is_update = true;
-			}
+			constraint_mgr.OnMouseRelease(world_m_pos, k, b);
+			layers["fg"].is_update = true;
 		}
+		break;
+	
 
-		//if (pge->GetMouse(1).bHeld) RemoveConstraint();
-	}
-	else if (mode == Mode::JOINTPAIR) {
-		if (!joint_mgr.is_press) {
-			if (pge->GetMouse(0).bPressed) {
-				for (auto& poly : polygons) {
-					if (poly.IsPointInBounds(world_m_pos)) {
-						joint_mgr.OnMousePress(&poly);
-						break;
-					}
+	case Mode::JOINTPAIR:
+		if (!joint_mgr.is_press && pge->GetMouse(0).bPressed) {
+			for (auto& poly : polygons) {
+				if (poly.IsPointInBounds(world_m_pos)) {
+					joint_mgr.OnMousePress(&poly);
+					break;
 				}
 			}
 		}
-		else {
-			if (pge->GetMouse(0).bReleased) {
-				bool is_join_polygon = false;
-				for (auto& poly : polygons) {
-					if (poly.IsPointInBounds(world_m_pos) && joint_mgr.poly != &poly) {
+		else if (pge->GetMouse(0).bReleased) {
+			bool is_join_polygon = false;
+			for (auto& poly : polygons) {
+				if (poly.IsPointInBounds(world_m_pos) && joint_mgr.poly != &poly) {
 
-						float k = constraints_panel("k")->value;
-						float b = constraints_panel("b")->value;
+					float k = constraints_panel("k")->value;
+					float b = constraints_panel("b")->value;
 
-						joint_mgr.OnMouseRelease(&poly, k, b);
-						layers["fg"].is_update = true;
-						is_join_polygon = true;
-						break;
-					}
-				}
-				if (!is_join_polygon) { 
-					joint_mgr.Reset();
+					joint_mgr.OnMouseRelease(&poly, k, b);
+					layers["fg"].is_update = true;
+					is_join_polygon = true;
+					break;
 				}
 			}
+			if (!is_join_polygon) {
+				joint_mgr.Reset();
+			}
 		}
-	}
-	else {
 
+		break;
+	default:
 		// Editing functions
 		if (!add_polygon) {
 			OnMousePressEdit(world_m_pos);
@@ -296,10 +270,18 @@ void EditState::Input() {
 		}
 
 		if (pge->GetKey(olc::R).bReleased) { RemovePolygon(); }
+		break;
 	}
 
+	if (!add_polygon && pge->GetKey(olc::C).bHeld) {
+		if (selected_shape) {
+			CopyPolygon(selected_shape->position);
+			selected_shape = nullptr;
+			selected_vertex = nullptr;
+		}
+	}
 
-	// Panning functions
+	// Panning and zooming functions
 	if (pge->GetMouse(2).bHeld || pge->GetMouseWheel()) { PanAndZoomLevel(m_pos); }
 
 	prev_m_pos = m_pos;
@@ -325,16 +307,6 @@ void EditState::Update() {
 		else { add_polygon->position = ToWorld(m_pos); }
 		add_polygon->Update(true);
 	}
-
-	// GUI
-	/*if (mode != Mode::POLYGON) {
-		IsRenderGUI(false);
-		constraints_panel.is_render = true;
-	}
-	else {
-		constraints_panel.is_render = false;
-		IsRenderGUI(true);
-	}*/
 }
 
 void EditState::DrawBackground() {
@@ -465,11 +437,6 @@ void EditState::Draw() {
 			SetTextBox("Brightness indicates the polygon's heaviness", "ToggleMassMode", olc::WHITE, { 100, 56 });
 			//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
 		}
-		//else if (button_panel("ClearLevel")->IsPointInBounds(m_pos)) {
-		//	DrawString("Clear Scene", olc::RED);
-		//	SetTextBox("Clears the contents of the scene", "ClearLevel", olc::Pixel(255, 193, 143), { 105, 45 }); // Red violet color
-		//	//pge->DrawString({ m_pos.x, m_pos.y + 8 }, "Toggle mass view", olc::WHITE);
-		//}
 		else if (button_panel("AddConstraint")->IsPointInBounds(m_pos)) {
 			DrawString("Contraints Mode", olc::WHITE);
 			SetTextBox("Click and drag a polygon to make rope", "AddConstraint", olc::YELLOW, { 105, 45 });
@@ -487,7 +454,6 @@ void EditState::Draw() {
 			text_box.SetBox(clear_button.position + olc::vi2d{ -clear_button.size.x * 2, clear_button.size.y + (int)unit_size / 2 }, { 105, 45 },
 				olc::Pixel(255, 193, 143), "Clears the contents of the scene"); // Red violet color
 			text_box.is_render = true;
-			//SetTextBox("Clears the contents of the scene", "ClearLevel", olc::Pixel(255, 193, 143), { 105, 45 }); // Red violet color
 		}
 	}
 
@@ -501,15 +467,6 @@ void EditState::Draw() {
 
 	// Adding functions
 	if (add_polygon) add_polygon->Draw(pge, offset, scale_zoom, is_polygon_fill);
-
-	//const olc::vi2d& offset = { 40, 40 };
-	//help_box.SetPanel(offset, { pge->ScreenWidth() - 2 * offset.x, pge->ScreenHeight() - 2 * offset.y }, olc::YELLOW, {
-	//	"Right mouse - Open up the polygons panel",
-	//	"Middle mouse - To pan the scene",
-	//	//"R - remove the selected polygon",
-	//	//"Ctrl + C - copy a polygon"
-	//}, 2);
-	//help_box.SetTitle("Instructions");
 
 	if (is_helper_box) {
 		SetHelpBox(0);
@@ -579,30 +536,17 @@ void EditState::ButtonFunctions() {
 	else if (button_panel("ToggleMassMode")->is_pressed) {
 		is_mass_mode = !is_mass_mode;
 	}
-	/*else if (button_panel("ClearLevel")->is_pressed) {
-		offset = { 0.0f, 0.0f };
-		polygons.clear();
-		constraint_mgr.ClearConstraints();
-		joint_mgr.ClearJointPairs();
-
-		selected_shape = nullptr;
-		selected_vertex = nullptr;
-		IsRenderGUI(false);
-	}*/
 	else if (button_panel("AddConstraint")->is_pressed) {
 		mode = mode == Mode::CONSTRAINTS ? Mode::POLYGON : Mode::CONSTRAINTS;
 		constraints_panel.is_render = (mode == Mode::CONSTRAINTS);
 		IsRenderGUI(false);
-		//is_add_constraints = !is_add_constraints;
 		button_panel("AddJointPair")->is_toggle_state = false;
-		//is_add_joint_pair = false;
 	}
 	else if (button_panel("AddJointPair")->is_pressed) {
 		mode = mode == Mode::JOINTPAIR ? Mode::POLYGON : Mode::JOINTPAIR;
 		constraints_panel.is_render = (mode == Mode::JOINTPAIR);
 		IsRenderGUI(false);
 		button_panel("AddConstraint")->is_toggle_state = false;
-		//is_add_constraints = false;
 	}
 	else if (clear_button.is_pressed) {
 		offset = { 0.0f, 0.0f };
@@ -687,7 +631,7 @@ void EditState::OnMousePressEdit(const olc::vf2d& world_m_pos) {
 		}
 	}
 
-	if (!is_feature) {
+	if (!is_feature) { // To maintain the edit feature while the left mouse is held down
 		if (selected_shape) {
 			const PolygonShape& test_poly_s = ScalePolygon(-0.2f, *selected_shape);
 			const PolygonShape& test_poly_r = ScalePolygon(+0.2f, *selected_shape);
@@ -761,8 +705,7 @@ void EditState::OnMousePressAdd(const olc::vf2d& world_m_pos) {
 	layers["fg"].is_update = true;
 	polygons.back().Update(true);
 	
-	delete add_polygon;
-	add_polygon = nullptr;
+	UtilityFunctions::SafeDeletePointer(add_polygon);
 
 	poly_panel.is_pressed = false;
 }
